@@ -2,7 +2,6 @@ import imagiz
 import cv2
 import sys
 
-# Check if an IP address is provided as a command-line argument
 if len(sys.argv) != 2:
     print("Usage: python client_camera.py <server_ip>")
     sys.exit(1)
