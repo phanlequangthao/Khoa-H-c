@@ -13,10 +13,17 @@ import numpy as np
 import pickle
 from win32com.client import Dispatch
 import os
+import socket
+import threading
 mp_drawing = mp.solutions.drawing_utils 
 mp_holistic = mp.solutions.holistic
 speak = Dispatch("SAPI.SpVoice").Speak
 server=imagiz.Server()
+# host = '26.64.220.173'
+# port = 12345
+
+# client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# client.connect((host, port))
 class SpeechToVideoThread(QThread):
     video = pyqtSignal(QImage)
     audioTextChanged = pyqtSignal(str)
@@ -189,7 +196,7 @@ class Ham_Camera(QThread):
         # Cập nhật giá trị của self.string thành chuỗi rỗng
         self.string = ""
     def run(self):
-        
+        # message_chat = client.recv(1024).decode('utf-8')
         with open('body_language.pkl', 'rb') as f:
             model = pickle.load(f)
         cap = cv2.VideoCapture(1) #khởi tạo webcam
@@ -202,8 +209,8 @@ class Ham_Camera(QThread):
         with mp_holistic.Holistic(min_detection_confidence=0.2, min_tracking_confidence=0.2) as holistic:
             while self.trangThai:# chạy liên tục quá trình nhận diện
                 ret, frame1 = cap.read() #đọc ảnh từ webcam
-                message=server.receive()
-                frame2=cv2.imdecode(message.image,1)
+                message_cam=server.receive()
+                frame2=cv2.imdecode(message_cam.image,1)
                 H, W, _ = frame1.shape
                 H2, W2, _ = frame2.shape
                 if ret: #nếu như camera được khởi tạo thành công thì sẽ chạy phần xử lý, nếu không thì sẽ thoát chương trình
@@ -225,9 +232,9 @@ class Ham_Camera(QThread):
                         rh1 = results1.right_hand_landmarks.landmark
                         rh_row1 = list(np.array([[landmark.x, landmark.y, landmark.z] for landmark in rh1]).flatten())
                         row1 = rh_row1
-                        X = pd.DataFrame([row1])
-                        body_language_class1 = model.predict(X)[0]
-                        body_language_prob1 = model.predict_proba(X)[0]
+                        X1 = pd.DataFrame([row1])
+                        body_language_class1 = model.predict(X1)[0]
+                        body_language_prob1 = model.predict_proba(X1)[0]
                         if results1.right_hand_landmarks:
                             bbox1 = self.get_hand_bbox(results1.right_hand_landmarks, W, H)
                             cv2.rectangle(image1, bbox1[0], bbox1[1], (255, 255, 255), 2)
@@ -246,13 +253,12 @@ class Ham_Camera(QThread):
                                 self.checkTrung = body_language_class1
                         
 
-
                         rh2 = results2.right_hand_landmarks.landmark
                         rh_row2 = list(np.array([[landmark.x, landmark.y, landmark.z] for landmark in rh2]).flatten())
                         row2 = rh_row2
-                        X = pd.DataFrame([row2])
-                        body_language_class2 = model.predict(X)[0]
-                        body_language_prob2 = model.predict_proba(X)[0]
+                        X2 = pd.DataFrame([row2])
+                        body_language_class2 = model.predict(X2)[0]
+                        body_language_prob2 = model.predict_proba(X2)[0]
                         if results2.right_hand_landmarks:
                             bbox2 = self.get_hand_bbox(results2.right_hand_landmarks, W2, H2)
                             cv2.rectangle(image2, bbox2[0], bbox2[1], (255, 255, 255), 2)
@@ -261,7 +267,7 @@ class Ham_Camera(QThread):
                             cv2.putText(image2, prob_text2, (bbox2[0][0], bbox2[0][1] - 10),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)           
                         if body_language_prob2[np.argmax(body_language_prob2)] >= 0.85 and body_language_class2 != self.checkTrung:
-                            if body_language_class2 == "space": 
+                            if body_language_class2 == "space":
                                 self.string += " "
                                 self.luongString1.emit(self.string)
                                 self.checkTrung = body_language_class2
@@ -334,9 +340,9 @@ class Ham_Chinh(QMainWindow):
         # Kết nối tín hiệu delete_2 của nút delete_2 với hàm xoaChu
         self.delete_2.clicked.connect(self.xoaChu)
         #Kết nối tín hiệu speak với hàm nói ra văn bản
-        self.speak.clicked.connect(self.speakText)
+        
         # Kết nối tín hiệu luongString1 của luồng camera với hàm setText của label text
-        self.thread_camera.luongString1.connect(self.text.setText)
+        self.thread_camera.luongString1.connect(self.text1.setText)
         #voice to text/video
         self.record_button.clicked.connect(self.start_recording)
         self.stop_record_button.clicked.connect(self.stop_recording)
@@ -380,15 +386,18 @@ class Ham_Chinh(QMainWindow):
         self.thread_camera.luongString1.emit(self.thread_camera.string)
     def xoaChu(self):
         # Xóa ký tự cuối cùng trong textt
-        textt = self.text.text()  
+        textt = self.text1.text()  
         textt = textt[:-1]
         print(textt)
         # Cập nhật textt lên label text
-        self.text.setText(textt)
-    def speakText(self):
-        txt = self.text.text()
-        print(txt)
-        speak(txt)
+        self.text1.setText(textt)
+    def xoaChu2(self):
+        # Xóa ký tự cuối cùng trong textt
+        textt2 = self.text2.text()  
+        textt2 = textt2[:-1]
+        print(textt2)
+        # Cập nhật textt lên label text
+        self.text2.setText(textt2)
     def start_recording(self):
         self.record_button.setEnabled(False)
         self.stop_record_button.setEnabled(True)
