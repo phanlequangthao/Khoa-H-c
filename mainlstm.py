@@ -398,13 +398,6 @@ class Ham_Chinh(QMainWindow):
         print(textt)
         # Cập nhật textt lên label text
         self.text1.setText(textt)
-    def xoaChu2(self):
-        # Xóa ký tự cuối cùng trong textt
-        textt2 = self.text2.text()  
-        textt2 = textt2[:-1]
-        print(textt2)
-        # Cập nhật textt lên label text
-        self.text2.setText(textt2)
     def start_recording(self):
         self.record_button.setEnabled(False)
         self.stop_record_button.setEnabled(True)
