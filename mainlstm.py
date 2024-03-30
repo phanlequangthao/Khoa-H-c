@@ -14,7 +14,6 @@ import pickle
 from win32com.client import Dispatch
 import os
 import socket
-import threading
 mp_drawing = mp.solutions.drawing_utils 
 mp_holistic = mp.solutions.holistic
 speak = Dispatch("SAPI.SpVoice").Speak

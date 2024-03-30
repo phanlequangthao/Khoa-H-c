@@ -1,13 +1,12 @@
 import imagiz
 import cv2
-import sys
 
 # if len(sys.argv) != 2:
 #     print("Usage: python client_camera.py <server_ip>")
 #     sys.exit(1)
 
 # Use the provided IP address as the server IP
-server_ip = "26.64.220.173"
+server_ip = ""
 
 client = imagiz.Client("cc1", server_ip=server_ip)
 vid = cv2.VideoCapture(0)

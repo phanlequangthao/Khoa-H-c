@@ -1,0 +1,12 @@
+PyQt5==5.15.9
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.13.0
+opencv-python==4.9.0.80
+opencv-python-headless==4.9.0.80
+imagiz==0.5
+SpeechRecognition==3.10.1
+moviepy==1.0.3
+mediapipe==0.10.10
+pandas==2.2.1
+numpy==1.26.4
+pywin32==306
