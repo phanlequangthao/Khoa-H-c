@@ -17,7 +17,7 @@ def receive_messages():
                 # Extract the other user's IP from the message
                 other_user_ip = message.split(":")[1]
                 # Use the extracted IP to run the necessary subprocesses
-                subprocess.Popen(["python", "client_camera.py", other_user_ip])
+                subprocess.Popen(["python", "client_camera.py", "--server_ip", other_user_ip])
                 subprocess.Popen(["python", "svaudio.py"])
                 subprocess.Popen(["python", "claudio.py", "--host_ip", other_user_ip])
                 subprocess.Popen(["python", "mainlstm.py"])
