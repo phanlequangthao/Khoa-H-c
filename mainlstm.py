@@ -406,6 +406,15 @@ class Ham_Chinh(QMainWindow):
         self.record_button.setEnabled(True)
         self.stop_record_button.setEnabled(False)
         self.thread_vid.stop_recording()
+    import threading
+
+    def listen_for_messages(client, self):
+        while True:
+            message = client.recv(1024).decode('utf-8')
+            self.text2.setText(message)
+    listen_thread = threading.Thread(target=listen_for_messages, args=(client,))
+    listen_thread.start()
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = Ham_Chinh()
