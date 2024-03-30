@@ -158,56 +158,6 @@
        </item>
       </layout>
      </widget>
-     <widget class="QPushButton" name="space">
-      <property name="geometry">
-       <rect>
-        <x>770</x>
-        <y>500</y>
-        <width>131</width>
-        <height>51</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">QPushButton {
-                              background-color: qradialgradient(cx: 0.5, cy: 0.5, radius: 1, fx: 0.5, fy: 0.5, stop: 0 rgba(116, 116, 116), stop: 1 rgba(50, 50, 50));
-                              border: 15px;
-                              color: rgb(255, 255, 255);
-                              font: 20pt &quot;Segoe MDL2 Assets&quot;;
-                              border-radius: 10px;
-                          }
-                          QPushButton:pressed {
-                              background-color: qradialgradient(cx: 0.5, cy: 0.5, radius: 1, fx: 0.5, fy: 0.5, stop: 0 rgba(50, 50, 50), stop: 1 rgba(116, 116, 116));
-                          }</string>
-      </property>
-      <property name="text">
-       <string>SPACE</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="check">
-      <property name="geometry">
-       <rect>
-        <x>770</x>
-        <y>560</y>
-        <width>131</width>
-        <height>51</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">QPushButton {
-                              background-color: qradialgradient(cx: 0.5, cy: 0.5, radius: 1, fx: 0.5, fy: 0.5, stop: 0 rgba(116, 116, 116), stop: 1 rgba(50, 50, 50));
-                              border: 15px;
-                              color: rgb(255, 255, 255);
-                              font: 20pt &quot;Segoe MDL2 Assets&quot;;
-                              border-radius: 10px;
-                          }
-                          QPushButton:pressed {
-                              background-color: qradialgradient(cx: 0.5, cy: 0.5, radius: 1, fx: 0.5, fy: 0.5, stop: 0 rgba(50, 50, 50), stop: 1 rgba(116, 116, 116));
-                          }</string>
-      </property>
-      <property name="text">
-       <string>CHECK</string>
-      </property>
-     </widget>
      <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
@@ -315,6 +265,75 @@
          </property>
          <property name="text">
           <string/>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="layoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>770</x>
+        <y>470</y>
+        <width>131</width>
+        <height>171</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QPushButton" name="space">
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+                              background-color: qradialgradient(cx: 0.5, cy: 0.5, radius: 1, fx: 0.5, fy: 0.5, stop: 0 rgba(116, 116, 116), stop: 1 rgba(50, 50, 50));
+                              border: 15px;
+                              color: rgb(255, 255, 255);
+                              font: 20pt &quot;Segoe MDL2 Assets&quot;;
+                              border-radius: 10px;
+                          }
+                          QPushButton:pressed {
+                              background-color: qradialgradient(cx: 0.5, cy: 0.5, radius: 1, fx: 0.5, fy: 0.5, stop: 0 rgba(50, 50, 50), stop: 1 rgba(116, 116, 116));
+                          }</string>
+         </property>
+         <property name="text">
+          <string>SPACE</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="check">
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+                              background-color: qradialgradient(cx: 0.5, cy: 0.5, radius: 1, fx: 0.5, fy: 0.5, stop: 0 rgba(116, 116, 116), stop: 1 rgba(50, 50, 50));
+                              border: 15px;
+                              color: rgb(255, 255, 255);
+                              font: 20pt &quot;Segoe MDL2 Assets&quot;;
+                              border-radius: 10px;
+                          }
+                          QPushButton:pressed {
+                              background-color: qradialgradient(cx: 0.5, cy: 0.5, radius: 1, fx: 0.5, fy: 0.5, stop: 0 rgba(50, 50, 50), stop: 1 rgba(116, 116, 116));
+                          }</string>
+         </property>
+         <property name="text">
+          <string>CHECK</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="send">
+         <property name="styleSheet">
+          <string notr="true">QPushButton {
+                              background-color: qradialgradient(cx: 0.5, cy: 0.5, radius: 1, fx: 0.5, fy: 0.5, stop: 0 rgba(116, 116, 116), stop: 1 rgba(50, 50, 50));
+                              border: 15px;
+                              color: rgb(255, 255, 255);
+                              font: 20pt &quot;Segoe MDL2 Assets&quot;;
+                              border-radius: 10px;
+                          }
+                          QPushButton:pressed {
+                              background-color: qradialgradient(cx: 0.5, cy: 0.5, radius: 1, fx: 0.5, fy: 0.5, stop: 0 rgba(50, 50, 50), stop: 1 rgba(116, 116, 116));
+                          }</string>
+         </property>
+         <property name="text">
+          <string>SEND</string>
          </property>
         </widget>
        </item>

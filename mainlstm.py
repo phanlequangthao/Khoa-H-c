@@ -19,11 +19,11 @@ mp_drawing = mp.solutions.drawing_utils
 mp_holistic = mp.solutions.holistic
 speak = Dispatch("SAPI.SpVoice").Speak
 server=imagiz.Server()
-# host = '26.64.220.173'
-# port = 12345
+host = '26.64.220.173'
+port = 12345
 
-# client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# client.connect((host, port))
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.connect((host, port))
 class SpeechToVideoThread(QThread):
     video = pyqtSignal(QImage)
     audioTextChanged = pyqtSignal(str)
@@ -266,15 +266,15 @@ class Ham_Camera(QThread):
                             prob_text2 = f'{class_name2}: {round(body_language_prob2[np.argmax(body_language_prob2)], 2)}'
                             cv2.putText(image2, prob_text2, (bbox2[0][0], bbox2[0][1] - 10),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)           
-                        if body_language_prob2[np.argmax(body_language_prob2)] >= 0.85 and body_language_class2 != self.checkTrung:
-                            if body_language_class2 == "space":
-                                self.string += " "
-                                self.luongString1.emit(self.string)
-                                self.checkTrung = body_language_class2
-                            else:
-                                self.string += body_language_class2
-                                self.luongString1.emit(self.string)
-                                self.checkTrung = body_language_class2
+                        # if body_language_prob2[np.argmax(body_language_prob2)] >= 0.85 and body_language_class2 != self.checkTrung:
+                        #     if body_language_class2 == "space":
+                        #         self.string += " "
+                        #         self.luongString1.emit(self.string)
+                        #         self.checkTrung = body_language_class2
+                        #     else:
+                        #         self.string += body_language_class2
+                        #         self.luongString1.emit(self.string)
+                        #         self.checkTrung = body_language_class2
                     except:
                         pass
                     h, w, ch = image1.shape
@@ -339,8 +339,10 @@ class Ham_Chinh(QMainWindow):
         self.clear.clicked.connect(self.xoaToanBo)
         # Kết nối tín hiệu delete_2 của nút delete_2 với hàm xoaChu
         self.delete_2.clicked.connect(self.xoaChu)
+        self.send.clicked.connect(self.sendMess)
         #Kết nối tín hiệu speak với hàm nói ra văn bản
-        
+        message = client.recv(1024).decode('utf-8')
+        self.text2.setText(message)
         # Kết nối tín hiệu luongString1 của luồng camera với hàm setText của label text
         self.thread_camera.luongString1.connect(self.text1.setText)
         #voice to text/video
@@ -355,6 +357,12 @@ class Ham_Chinh(QMainWindow):
         self.Work2.start()
         self.Work.vid.connect(self.Imageupd_slot)
         self.Work2.vid2.connect(self.vidletter)
+    def sendMess(self):
+        mess = self.text1.text()
+        client.send(mess.encode('utf-8'))
+    def getMess(self):
+        message = client.recv(1024).decode('utf-8')
+        self.text2.setText(message)
     def Imageupd_slot(self, Image):
         self.img_label.setPixmap(QPixmap.fromImage(Image))
     def vidletter(self, Image):
