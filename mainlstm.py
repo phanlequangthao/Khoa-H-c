@@ -14,7 +14,6 @@ import pickle
 from win32com.client import Dispatch
 import os
 import socket
-import threading
 mp_drawing = mp.solutions.drawing_utils 
 mp_holistic = mp.solutions.holistic
 speak = Dispatch("SAPI.SpVoice").Speak
@@ -199,7 +198,7 @@ class Ham_Camera(QThread):
         # message_chat = client.recv(1024).decode('utf-8')
         with open('body_language.pkl', 'rb') as f:
             model = pickle.load(f)
-        cap = cv2.VideoCapture(1) #khởi tạo webcam
+        cap = cv2.VideoCapture(0) #khởi tạo webcam
         cap.set(380,380)
         # image_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         # image_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -341,8 +340,8 @@ class Ham_Chinh(QMainWindow):
         self.delete_2.clicked.connect(self.xoaChu)
         self.send.clicked.connect(self.sendMess)
         #Kết nối tín hiệu speak với hàm nói ra văn bản
-        message = client.recv(1024).decode('utf-8')
-        self.text2.setText(message)
+        # message = client.recv(1024).decode('utf-8')
+        # self.text2.setText(message)
         # Kết nối tín hiệu luongString1 của luồng camera với hàm setText của label text
         self.thread_camera.luongString1.connect(self.text1.setText)
         #voice to text/video
