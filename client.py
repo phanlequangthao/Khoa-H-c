@@ -21,6 +21,7 @@ def receive_messages():
                 subprocess.Popen(["python", "svaudio.py"])
                 subprocess.Popen(["python", "claudio.py", "--host_ip", other_user_ip])
                 subprocess.Popen(["python", "mainlstm.py"])
+                print("done")
             else:
                 print(message)
         except Exception as e:
