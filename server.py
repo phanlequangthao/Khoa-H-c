@@ -6,7 +6,7 @@ host = '26.64.220.173'
 port = 12345
 clients = {}
 room_codes = {}
-client_addresses = {}  # Dictionary để lưu địa chỉ IP của mỗi client
+client_addresses = {}  
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((host, port))
 server.listen()
