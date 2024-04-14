@@ -10,3 +10,10 @@ mediapipe==0.10.10
 pandas==2.2.1
 numpy==1.26.4
 pywin32==306
+soundfile
+pyshine
+scikit-learn
+pyaudio
+sounddevice
+matplotlib
+keras
