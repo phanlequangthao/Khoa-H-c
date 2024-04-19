@@ -3,11 +3,10 @@ import pyshine as ps
 mode =  'get'
 name = 'CLIENT RECEIVING AUDIO'
 audio,context = ps.audioCapture(mode=mode)
-ps.showPlot(context,name)
 
 # create socket
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-host_ip = '26.98.239.75'#26.39.81.45
+host_ip = '26.23.20.235'
 port = 4982
 
 socket_address = (host_ip,port)

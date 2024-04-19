@@ -178,6 +178,7 @@ class Ham_Camera(QThread):
         self.checkTrung = ""
         self.trangThai = True
         self.string = ""
+        self.string2 = ""
         self.frame_count_threshold = 20  # Số frame tối thiểu để hiển thị classname
         self.current_frame_count = 0
         # Kết nối tín hiệu luongString1 của luồng camera với hàm update_string
@@ -189,7 +190,7 @@ class Ham_Camera(QThread):
     def update_string1(self, new_string):
         self.string = new_string
     def update_string2(self, new_string):
-        self.string = new_string
+        self.string2 = new_string
     def clear_string(self):
         # Xử lý khi nút "clear" được nhấn
         # Cập nhật giá trị của self.string thành chuỗi rỗng
@@ -198,7 +199,10 @@ class Ham_Camera(QThread):
         # message_chat = client.recv(1024).decode('utf-8')
         with open('body_language.pkl', 'rb') as f:
             model = pickle.load(f)
-        cap = cv2.VideoCapture(0) #khởi tạo webcam
+        # server_ip = "26.23.20.235"
+        # encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+        # client = imagiz.Client("cc1", server_ip=server_ip)
+        cap = cv2.VideoCapture(2) #khởi tạo webcam
         cap.set(380,380)
         # image_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         # image_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -216,14 +220,18 @@ class Ham_Camera(QThread):
                     image1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
                     image1.flags.writeable = False
                     results1 = holistic.process(image1)
+                    image1.flags.writeable = True
+                    
                     image2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2RGB)
                     image2.flags.writeable = False
                     results2 = holistic.process(image2)
+                    image2.flags.writeable = True  
+
                     mp_drawing.draw_landmarks(image1, results1.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
                                  mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
                                  mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2)
                                 )
-                    mp_drawing.draw_landmarks(image2, results1.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
+                    mp_drawing.draw_landmarks(image2, results2.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
                                  mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
                                  mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2)
                                 )
@@ -250,7 +258,9 @@ class Ham_Camera(QThread):
                                 self.string += body_language_class1
                                 self.luongString1.emit(self.string)
                                 self.checkTrung = body_language_class1
-                        
+                        # image1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
+                        image1_rgb = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
+                        cv2.imwrite('shared_frame.jpg', image1_rgb)
 
                         rh2 = results2.right_hand_landmarks.landmark
                         rh_row2 = list(np.array([[landmark.x, landmark.y, landmark.z] for landmark in rh2]).flatten())
@@ -265,15 +275,15 @@ class Ham_Camera(QThread):
                             prob_text2 = f'{class_name2}: {round(body_language_prob2[np.argmax(body_language_prob2)], 2)}'
                             cv2.putText(image2, prob_text2, (bbox2[0][0], bbox2[0][1] - 10),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)           
-                        # if body_language_prob2[np.argmax(body_language_prob2)] >= 0.85 and body_language_class2 != self.checkTrung:
+                        # if body_language_prob2[np.argmax(body_language_prob2)] >= 0.85 and body_language_class2 != self.checkTrung2:
                         #     if body_language_class2 == "space":
-                        #         self.string += " "
-                        #         self.luongString1.emit(self.string)
-                        #         self.checkTrung = body_language_class2
+                        #         self.string2 += " "
+                        #         self.luongString2.emit(self.string2)
+                        #         self.checkTrung2 = body_language_class2
                         #     else:
-                        #         self.string += body_language_class2
-                        #         self.luongString1.emit(self.string)
-                        #         self.checkTrung = body_language_class2
+                        #         self.string2 += body_language_class2
+                        #         self.luongString2.emit(self.string2)
+                        #         self.checkTrung2 = body_language_class2
                     except:
                         pass
                     h, w, ch = image1.shape
@@ -344,6 +354,7 @@ class Ham_Chinh(QMainWindow):
         # self.text2.setText(message)
         # Kết nối tín hiệu luongString1 của luồng camera với hàm setText của label text
         self.thread_camera.luongString1.connect(self.text1.setText)
+        self.thread_camera.luongString2.connect(self.text2.setText)
         #voice to text/video
         self.record_button.clicked.connect(self.start_recording)
         self.stop_record_button.clicked.connect(self.stop_recording)
@@ -359,9 +370,6 @@ class Ham_Chinh(QMainWindow):
     def sendMess(self):
         mess = self.text1.text()
         client.send(mess.encode('utf-8'))
-    def getMess(self):
-        message = client.recv(1024).decode('utf-8')
-        self.text2.setText(message)
     def Imageupd_slot(self, Image):
         self.img_label.setPixmap(QPixmap.fromImage(Image))
     def vidletter(self, Image):
@@ -409,9 +417,18 @@ class Ham_Chinh(QMainWindow):
     import threading
 
     def listen_for_messages(client, self):
+        server_ip = "26.157.245.17"
+        client = imagiz.Client("cc1", server_ip=server_ip)
+        vid = cv2.VideoCapture(0)
+        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
         while True:
+            r, frame = vid.read()
             message = client.recv(1024).decode('utf-8')
             self.text2.setText(message)
+            if r:
+                r, image = cv2.imencode('.jpg', frame, encode_param)
+                # cv2.imshow('frame', frame)
+                client.send(image)
     listen_thread = threading.Thread(target=listen_for_messages, args=(client,))
     listen_thread.start()
 

@@ -6,15 +6,16 @@ import cv2
 #     sys.exit(1)
 
 # Use the provided IP address as the server IP
-server_ip = ""
+server_ip = "26.157.245.17"
 
 client = imagiz.Client("cc1", server_ip=server_ip)
-vid = cv2.VideoCapture(0)
+# vid = cv2.VideoCapture(0)
 encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
 while True:
-    r, frame = vid.read()
-    if r:
+    try:
+        frame = cv2.imread('shared_frame.jpg', 1)
         r, image = cv2.imencode('.jpg', frame, encode_param)
         client.send(image)
-    else:
-        break
+    except cv2.error as e:
+        print(f"Error: {e}")
+        continue

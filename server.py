@@ -4,6 +4,8 @@ import random
 
 host = '26.64.220.173'
 port = 12345
+
+
 clients = {}
 room_codes = {}
 client_addresses = {}  # Dictionary để lưu địa chỉ IP của mỗi client
