@@ -221,7 +221,7 @@ class Ham_Camera(QThread):
                     image1.flags.writeable = False
                     results1 = holistic.process(image1)
                     image1.flags.writeable = True
-                    
+                    cv2.imwrite('shared_frame.jpg', image1)
                     image2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2RGB)
                     image2.flags.writeable = False
                     results2 = holistic.process(image2)
@@ -259,8 +259,8 @@ class Ham_Camera(QThread):
                                 self.luongString1.emit(self.string)
                                 self.checkTrung = body_language_class1
                         # image1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
-                        image1_rgb = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
-                        cv2.imwrite('shared_frame.jpg', image1_rgb)
+                        # image1_rgb = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
+                        
 
                         rh2 = results2.right_hand_landmarks.landmark
                         rh_row2 = list(np.array([[landmark.x, landmark.y, landmark.z] for landmark in rh2]).flatten())
@@ -273,17 +273,16 @@ class Ham_Camera(QThread):
                             cv2.rectangle(image2, bbox2[0], bbox2[1], (255, 255, 255), 2)
                             class_name2 = body_language_class2.split(' ')[0]
                             prob_text2 = f'{class_name2}: {round(body_language_prob2[np.argmax(body_language_prob2)], 2)}'
-                            cv2.putText(image2, prob_text2, (bbox2[0][0], bbox2[0][1] - 10),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)           
-                        # if body_language_prob2[np.argmax(body_language_prob2)] >= 0.85 and body_language_class2 != self.checkTrung2:
-                        #     if body_language_class2 == "space":
-                        #         self.string2 += " "
-                        #         self.luongString2.emit(self.string2)
-                        #         self.checkTrung2 = body_language_class2
-                        #     else:
-                        #         self.string2 += body_language_class2
-                        #         self.luongString2.emit(self.string2)
-                        #         self.checkTrung2 = body_language_class2
+                            cv2.putText(image2, prob_text2, (bbox2[0][0], bbox2[0][1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                        if body_language_prob2[np.argmax(body_language_prob2)] >= 0.85 and body_language_class2 != self.checkTrung2:
+                            if body_language_class2 == "space":
+                                self.string2 += " "
+                                self.luongString2.emit(self.string2)
+                                self.checkTrung2 = body_language_class2
+                            else:
+                                self.string2 += body_language_class2
+                                self.luongString2.emit(self.string2)
+                                self.checkTrung2 = body_language_class2
                     except:
                         pass
                     h, w, ch = image1.shape
