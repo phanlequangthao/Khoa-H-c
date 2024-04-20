@@ -13,3 +13,13 @@ while True:
 
 cap.release()
 cv2.destroyAllWindows()
+# room_code = input("Enter room code or type 'NEW' for a new room: ")
+#     client.send(room_code.encode('utf-8'))
+#     server_message = client.recv(1024).decode('utf-8')
+#     print(server_message)
+#     if "Connected to room" in server_message:
+#         app = QApplication(sys.argv)
+#         window = Ham_Chinh()
+#         window.setWindowTitle('MainApp')
+#         window.show()
+#         sys.exit(app.exec_())

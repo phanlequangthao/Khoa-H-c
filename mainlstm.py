@@ -15,6 +15,7 @@ from win32com.client import Dispatch
 import os
 import socket
 import threading
+import subprocess
 mp_drawing = mp.solutions.drawing_utils 
 mp_holistic = mp.solutions.holistic
 speak = Dispatch("SAPI.SpVoice").Speak
@@ -323,6 +324,7 @@ Ham_Camera được sử dụng để khởi tạo webcam và chạy mô hình d
 chuyển thành hình ảnh sau đó cập nhật lên label_cam, tốc dộ cập nhật gần như bằng với thời gian thực
 """
 class Ham_Chinh(QMainWindow):
+    messageSent = pyqtSignal(str)
     # Lớp Ham_Chinh là lớp chính của chương trình, chịu trách nhiệm khởi tạo các thành phần giao diện và kết nối các tín hiệu giữa các lớp.
     def __init__(self):
         # Gọi hàm khởi tạo của lớp QMainWindow
@@ -353,6 +355,12 @@ class Ham_Chinh(QMainWindow):
         self.delete_2.clicked.connect(self.xoaChu)
         self.space.clicked.connect(self.spacee)
         self.check.clicked.connect(self.checkk)
+        self.send.clicked.connect(self.sendMess)
+        self.messageSent.connect(self.send_message)
+        #Kết nối tín hiệu speak với hàm nói ra văn bản
+        # message = client.recv(1024).decode('utf-8')
+        # self.text2.setText(message)
+        # Kết nối tín hiệu luongString1 của luồng camera với hàm setText của label text
         self.thread_camera.luongString1.connect(self.text1.setText)
         self.thread_camera.luongString2.connect(self.text2.setText)
         #voice to text/video
@@ -362,12 +370,38 @@ class Ham_Chinh(QMainWindow):
         self.play_video.clicked.connect(self.start_video)
         self.stop_video.clicked.connect(self.stop_vide)
         self.thread_vid.audioTextChanged.connect(self.text_2.setText)
+        self.listen_thread = threading.Thread(target=self.listen_for_messages)
+        self.listen_thread.start()
     def start_video(self):
         self.Work.start()
         self.Work2.start()
         self.Work.vid.connect(self.Imageupd_slot)
         self.Work2.vid2.connect(self.vidletter)
-    
+    def listen_for_messages(self):
+        while True:
+            try:
+                message = client.recv(1024).decode('utf-8')
+                print(f"Received message: {message}")
+                if "OTHER_USER_IP:" in message:
+                    other_user_ip = message.split(":")[1]
+                    # subprocess.Popen(["python", "mainlstm.py"])
+                    # time.sleep(7)
+                    subprocess.Popen(["python", "client_camera.py"])
+                    print("done")
+                else:
+                    self.text2.setText(message)
+            except Exception as e:
+                print("An error occurred!", e)
+                client.close()
+                break
+
+    def sendMess(self):
+        mess = self.text1.text()
+        self.messageSent.emit(mess)
+
+    def send_message(self, message):
+        client.send(message.encode('utf-8'))
+        print("Sent message successfully")
     def Imageupd_slot(self, Image):
         self.img_label.setPixmap(QPixmap.fromImage(Image))
     def vidletter(self, Image):
@@ -392,11 +426,13 @@ class Ham_Chinh(QMainWindow):
     def xoaToanBo(self):
         # Xóa toàn bộ nội dung trong label text
         self.thread_camera.luongClearSignal.emit()
+        self.text1.setText()
     def process_string(self):
         # Truy cập và xử lý giá trị từ Ham_Camera
         self.thread_camera.string = ""  
         # Cập nhật giá trị trong Ham_Camera
         self.thread_camera.luongString1.emit(self.thread_camera.string)
+        self.text1.setText()
     def xoaChu(self):
         # Xóa ký tự cuối cùng trong textt
         textt = self.text1.text()  
@@ -430,8 +466,13 @@ class Ham_Chinh(QMainWindow):
     
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    window = Ham_Chinh()
-    window.setWindowTitle('MainApp')
-    window.show()
-    sys.exit(app.exec_())
+    room_code = input("Enter room code or type 'NEW' for a new room: ")
+    client.send(room_code.encode('utf-8'))
+    server_message = client.recv(1024).decode('utf-8')
+    print(server_message)
+    if "Connected to room" in server_message:
+        app = QApplication(sys.argv)
+        window = Ham_Chinh()
+        window.setWindowTitle('MainApp')
+        window.show()
+        sys.exit(app.exec_())
