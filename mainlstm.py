@@ -222,19 +222,19 @@ class Ham_Camera(QThread):
                     results1 = holistic.process(image1)
                     image1.flags.writeable = True
                     cv2.imwrite('shared_frame.jpg', image1)
-                    image2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2RGB)
+                    image2 = frame2
                     image2.flags.writeable = False
                     results2 = holistic.process(image2)
                     image2.flags.writeable = True  
-
+                    # cv2.imshow('r', image2)
                     mp_drawing.draw_landmarks(image1, results1.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
                                  mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
                                  mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2)
                                 )
-                    mp_drawing.draw_landmarks(image2, results2.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
-                                 mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
-                                 mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2)
-                                )
+                    # mp_drawing.draw_landmarks(image2, results2.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
+                    #              mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
+                    #              mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2)
+                    #             )
                     try:
                         rh1 = results1.right_hand_landmarks.landmark
                         rh_row1 = list(np.array([[landmark.x, landmark.y, landmark.z] for landmark in rh1]).flatten())
@@ -262,27 +262,27 @@ class Ham_Camera(QThread):
                         # image1_rgb = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
                         
 
-                        rh2 = results2.right_hand_landmarks.landmark
-                        rh_row2 = list(np.array([[landmark.x, landmark.y, landmark.z] for landmark in rh2]).flatten())
-                        row2 = rh_row2
-                        X2 = pd.DataFrame([row2])
-                        body_language_class2 = model.predict(X2)[0]
-                        body_language_prob2 = model.predict_proba(X2)[0]
-                        if results2.right_hand_landmarks:
-                            bbox2 = self.get_hand_bbox(results2.right_hand_landmarks, W2, H2)
-                            cv2.rectangle(image2, bbox2[0], bbox2[1], (255, 255, 255), 2)
-                            class_name2 = body_language_class2.split(' ')[0]
-                            prob_text2 = f'{class_name2}: {round(body_language_prob2[np.argmax(body_language_prob2)], 2)}'
-                            cv2.putText(image2, prob_text2, (bbox2[0][0], bbox2[0][1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-                        if body_language_prob2[np.argmax(body_language_prob2)] >= 0.85 and body_language_class2 != self.checkTrung2:
-                            if body_language_class2 == "space":
-                                self.string2 += " "
-                                self.luongString2.emit(self.string2)
-                                self.checkTrung2 = body_language_class2
-                            else:
-                                self.string2 += body_language_class2
-                                self.luongString2.emit(self.string2)
-                                self.checkTrung2 = body_language_class2
+                        # rh2 = results2.right_hand_landmarks.landmark
+                        # rh_row2 = list(np.array([[landmark.x, landmark.y, landmark.z] for landmark in rh2]).flatten())
+                        # row2 = rh_row2
+                        # X2 = pd.DataFrame([row2])
+                        # body_language_class2 = model.predict(X2)[0]
+                        # body_language_prob2 = model.predict_proba(X2)[0]
+                        # if results2.right_hand_landmarks:
+                        #     bbox2 = self.get_hand_bbox(results2.right_hand_landmarks, W2, H2)
+                        #     cv2.rectangle(image2, bbox2[0], bbox2[1], (255, 255, 255), 2)
+                        #     class_name2 = body_language_class2.split(' ')[0]
+                        #     prob_text2 = f'{class_name2}: {round(body_language_prob2[np.argmax(body_language_prob2)], 2)}'
+                        #     cv2.putText(image2, prob_text2, (bbox2[0][0], bbox2[0][1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                        # if body_language_prob2[np.argmax(body_language_prob2)] >= 0.85 and body_language_class2 != self.checkTrung2:
+                        #     if body_language_class2 == "space":
+                        #         self.string2 += " "
+                        #         self.luongString2.emit(self.string2)
+                        #         self.checkTrung2 = body_language_class2
+                        #     else:
+                        #         self.string2 += body_language_class2
+                        #         self.luongString2.emit(self.string2)
+                        #         self.checkTrung2 = body_language_class2
                     except:
                         pass
                     h, w, ch = image1.shape
