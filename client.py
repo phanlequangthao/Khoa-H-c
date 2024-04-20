@@ -1,12 +1,9 @@
 import socket
 import threading
 import subprocess
-
+import time
 host = '26.64.220.173'
 port = 12345
-
-
-
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((host, port))
 
@@ -15,14 +12,10 @@ def receive_messages():
         try:
             message = client.recv(1024).decode('utf-8')
             if "OTHER_USER_IP:" in message:
-                # Extract the other user's IP from the message
                 other_user_ip = message.split(":")[1]
-                # Use the extracted IP to run the necessary subprocesses
-                # subprocess.Popen(["python", "client_camera.py"])
                 subprocess.Popen(["python", "mainlstm.py"])
-                # subprocess.Popen(["python", "svaudio.py"])
-                # subprocess.Popen(["python", "claudio.py", "--host_ip", other_user_ip])
-
+                time.sleep(7)
+                subprocess.Popen(["python", "client_camera.py"])
                 print("done")
             else:
                 print(message)

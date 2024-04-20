@@ -14,6 +14,7 @@ import pickle
 from win32com.client import Dispatch
 import os
 import socket
+import threading
 mp_drawing = mp.solutions.drawing_utils 
 mp_holistic = mp.solutions.holistic
 speak = Dispatch("SAPI.SpVoice").Speak
@@ -214,7 +215,7 @@ class Ham_Camera(QThread):
             while self.trangThai:# chạy liên tục quá trình nhận diện
                 ret, frame1 = cap.read() #đọc ảnh từ webcam
                 message_cam=server.receive()
-                frame2=cv2.imdecode(message_cam.image,1)
+                frame2=cv2.imdecode(message_cam.image,1 )
                 H, W, _ = frame1.shape
                 H2, W2, _ = frame2.shape
                 if ret: #nếu như camera được khởi tạo thành công thì sẽ chạy phần xử lý, nếu không thì sẽ thoát chương trình
@@ -322,7 +323,6 @@ Ham_Camera được sử dụng để khởi tạo webcam và chạy mô hình d
 chuyển thành hình ảnh sau đó cập nhật lên label_cam, tốc dộ cập nhật gần như bằng với thời gian thực
 """
 class Ham_Chinh(QMainWindow):
-    
     # Lớp Ham_Chinh là lớp chính của chương trình, chịu trách nhiệm khởi tạo các thành phần giao diện và kết nối các tín hiệu giữa các lớp.
     def __init__(self):
         # Gọi hàm khởi tạo của lớp QMainWindow
@@ -353,11 +353,6 @@ class Ham_Chinh(QMainWindow):
         self.delete_2.clicked.connect(self.xoaChu)
         self.space.clicked.connect(self.spacee)
         self.check.clicked.connect(self.checkk)
-        self.send.clicked.connect(self.sendMess)
-        #Kết nối tín hiệu speak với hàm nói ra văn bản
-        # message = client.recv(1024).decode('utf-8')
-        # self.text2.setText(message)
-        # Kết nối tín hiệu luongString1 của luồng camera với hàm setText của label text
         self.thread_camera.luongString1.connect(self.text1.setText)
         self.thread_camera.luongString2.connect(self.text2.setText)
         #voice to text/video
@@ -372,9 +367,7 @@ class Ham_Chinh(QMainWindow):
         self.Work2.start()
         self.Work.vid.connect(self.Imageupd_slot)
         self.Work2.vid2.connect(self.vidletter)
-    def sendMess(self):
-        mess = self.text1.text()
-        client.send(mess.encode('utf-8'))
+    
     def Imageupd_slot(self, Image):
         self.img_label.setPixmap(QPixmap.fromImage(Image))
     def vidletter(self, Image):
@@ -434,14 +427,7 @@ class Ham_Chinh(QMainWindow):
         self.record_button.setEnabled(True)
         self.stop_record_button.setEnabled(False)
         self.thread_vid.stop_recording()
-    import threading
-
-    def listen_for_messages(client, self):
-        while True:
-            message = client.recv(1024).decode('utf-8')
-            self.text2.setText(message)
-    listen_thread = threading.Thread(target=listen_for_messages, args=(client,))
-    listen_thread.start()
+    
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
