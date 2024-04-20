@@ -172,6 +172,7 @@ class Ham_Camera(QThread):
     luongString1 = pyqtSignal(str)
     luongString2 = pyqtSignal(str)
     luongClearSignal = pyqtSignal()
+    checkTrungChanged = pyqtSignal(str)
 
     def __init__(self):
         super(Ham_Camera, self).__init__()
@@ -254,10 +255,12 @@ class Ham_Camera(QThread):
                                 self.string += " "
                                 self.luongString1.emit(self.string)
                                 self.checkTrung = body_language_class1
+                                self.checkTrungChanged.emit(self.checkTrung)
                             else:
                                 self.string += body_language_class1
                                 self.luongString1.emit(self.string)
                                 self.checkTrung = body_language_class1
+                                self.checkTrungChanged.emit(self.checkTrung)
                         # image1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
                         # image1_rgb = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
                         
@@ -332,6 +335,7 @@ class Ham_Chinh(QMainWindow):
         self.Work2 = Video2()
         self.thread_camera = Ham_Camera()
         self.thread_camera.luongClearSignal.connect(self.process_string)
+        self.thread_camera.checkTrungChanged.connect(self.handle_check_trung_changed)
         # Khởi tạo luồng video
         self.img_dir = r'D:\a\img'
         self.video_output_path = r'output_video.mp4'
@@ -347,6 +351,8 @@ class Ham_Chinh(QMainWindow):
         self.clear.clicked.connect(self.xoaToanBo)
         # Kết nối tín hiệu delete_2 của nút delete_2 với hàm xoaChu
         self.delete_2.clicked.connect(self.xoaChu)
+        self.space.clicked.connect(self.spacee)
+        self.check.clicked.connect(self.checkk)
         self.send.clicked.connect(self.sendMess)
         #Kết nối tín hiệu speak với hàm nói ra văn bản
         # message = client.recv(1024).decode('utf-8')
@@ -395,7 +401,7 @@ class Ham_Chinh(QMainWindow):
         self.thread_camera.luongClearSignal.emit()
     def process_string(self):
         # Truy cập và xử lý giá trị từ Ham_Camera
-        self.thread_camera.string = ""  # Thay thế bằng xử lý thực tế của bạn
+        self.thread_camera.string = ""  
         # Cập nhật giá trị trong Ham_Camera
         self.thread_camera.luongString1.emit(self.thread_camera.string)
     def xoaChu(self):
@@ -405,6 +411,21 @@ class Ham_Chinh(QMainWindow):
         print(textt)
         # Cập nhật textt lên label text
         self.text1.setText(textt)
+        self.thread_camera.luongString1.emit(textt)
+    def spacee(self):
+        # Xóa ký tự cuối cùng trong textt
+        textt = self.text1.text()  
+        textt = textt + " "
+        print(textt)
+        # Cập nhật textt lên label text
+        self.text1.setText(textt)
+        self.thread_camera.luongString1.emit(textt)
+    def checkk(self):
+        self.thread_camera.checkTrung = ""
+        self.thread_camera.checkTrungChanged.emit(self.thread_camera.checkTrung)
+    def handle_check_trung_changed(self, new_check_trung):
+        if new_check_trung == "":
+            print("checkTrung done")
     def start_recording(self):
         self.record_button.setEnabled(False)
         self.stop_record_button.setEnabled(True)
@@ -416,18 +437,9 @@ class Ham_Chinh(QMainWindow):
     import threading
 
     def listen_for_messages(client, self):
-        server_ip = "26.157.245.17"
-        client = imagiz.Client("cc1", server_ip=server_ip)
-        vid = cv2.VideoCapture(0)
-        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
         while True:
-            r, frame = vid.read()
             message = client.recv(1024).decode('utf-8')
             self.text2.setText(message)
-            if r:
-                r, image = cv2.imencode('.jpg', frame, encode_param)
-                # cv2.imshow('frame', frame)
-                client.send(image)
     listen_thread = threading.Thread(target=listen_for_messages, args=(client,))
     listen_thread.start()
 
