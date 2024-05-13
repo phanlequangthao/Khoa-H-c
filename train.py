@@ -8,9 +8,9 @@ from sklearn.linear_model import RidgeClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import accuracy_score
 import pickle
-
+import tqdm
 # Load data
-df = pd.read_csv(r'khktmain-main\coords - Copy.csv')
+df = pd.read_csv(r'data.csv')
 X = df.drop('class', axis=1) # features
 y = df['class'] # target value
 
@@ -29,10 +29,13 @@ pipelines = {
 }
 
 # Fit models and select the best
-best_accuracy = 0.0
-best_classifier = ''
+from tqdm import tqdm
+
+best_accuracy = 0
+best_classifier = None
 best_model = None
-for name, pipeline in pipelines.items():
+
+for name, pipeline in tqdm(pipelines.items(), desc="Training models"):
     model = pipeline.fit(X_train, y_train)
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
@@ -40,6 +43,7 @@ for name, pipeline in pipelines.items():
         best_accuracy = accuracy
         best_classifier = name
         best_model = model
+
 
 # Save the best model
 with open('body_language.pkl', 'wb') as f:
