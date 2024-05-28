@@ -8,19 +8,14 @@ from sklearn.linear_model import RidgeClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import accuracy_score
 import pickle
-
-# Load data
-df = pd.read_csv(r'khktmain-main\coords - Copy.csv')
-X = df.drop('class', axis=1) # features
-y = df['class'] # target value
-
-# Split data
+df = pd.read_csv(r'khktmain-main\data.csv')
+X = df.drop('class', axis=1) 
+y = df['class'] 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1234)
 X_train = X_train.dropna()
 y_train = y_train.loc[X_train.index]
 X_test = X_test.dropna()
 y_test = y_test.loc[X_test.index]
-# Define pipelines
 pipelines = {
     'lr': Pipeline([('s', SimpleImputer()), ('ss', StandardScaler()), ('lr', LogisticRegression())]),
     'rc': Pipeline([('s', SimpleImputer()), ('ss', StandardScaler()), ('rc', RidgeClassifier())]),
@@ -28,7 +23,6 @@ pipelines = {
     'gb': Pipeline([('s', SimpleImputer()), ('ss', StandardScaler()), ('gb', GradientBoostingClassifier())]),
 }
 
-# Fit models and select the best
 best_accuracy = 0.0
 best_classifier = ''
 best_model = None
@@ -41,8 +35,5 @@ for name, pipeline in pipelines.items():
         best_classifier = name
         best_model = model
 
-# Save the best model
 with open('body_language.pkl', 'wb') as f:
     pickle.dump(best_model, f)
-
-print(f'The best model is {best_classifier} with accuracy {best_accuracy}.')

@@ -16,8 +16,15 @@ import os
 import socket
 import threading
 import subprocess
-mp_drawing = mp.solutions.drawing_utils 
-mp_holistic = mp.solutions.holistic
+import tensorflow as tf
+from keras.models import load_model
+
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+if len(physical_devices) > 0:
+    tf.config.experimental.set_visible_devices(physical_devices[0], 'GPU')
+mphands = mp.solutions.hands
+hands = mphands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+mpDraw = mp.solutions.drawing_utils
 speak = Dispatch("SAPI.SpVoice").Speak
 server=imagiz.Server()
 host = '26.64.220.173'
@@ -184,128 +191,122 @@ class Ham_Camera(QThread):
         self.string2 = ""
         self.frame_count_threshold = 20  # Số frame tối thiểu để hiển thị classname
         self.current_frame_count = 0
-        # Kết nối tín hiệu luongString1 của luồng camera với hàm update_string
         self.luongString1.connect(self.update_string1)
         self.luongString2.connect(self.update_string2)
-        # Kết nối tín hiệu luongClearSignal của luồng camera với hàm clear_string
         self.luongClearSignal.connect(self.clear_string)
 
     def update_string1(self, new_string):
         self.string = new_string
+
     def update_string2(self, new_string):
         self.string2 = new_string
+
     def clear_string(self):
-        # Xử lý khi nút "clear" được nhấn
-        # Cập nhật giá trị của self.string thành chuỗi rỗng
         self.string = ""
-    def run(self):
-        # message_chat = client.recv(1024).decode('utf-8')
-        with open('body_language.pkl', 'rb') as f:
-            model = pickle.load(f)
-        # server_ip = "26.23.20.235"
-        # encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-        # client = imagiz.Client("cc1", server_ip=server_ip)
-        cap = cv2.VideoCapture(2) #khởi tạo webcam
-        cap.set(380,380)
-        # image_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        # image_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        x_ = []
-        y_ = []
+
+    @staticmethod
+    def make_landmark_timestep(hand_landmarks):
+        lm_list = []
+        landmarks = hand_landmarks.landmark
         
-        with mp_holistic.Holistic(min_detection_confidence=0.2, min_tracking_confidence=0.2) as holistic:
-            while self.trangThai:# chạy liên tục quá trình nhận diện
-                ret, frame1 = cap.read() #đọc ảnh từ webcam
-                message_cam=server.receive()
-                frame2=cv2.imdecode(message_cam.image,1 )
-                H, W, _ = frame1.shape
-                H2, W2, _ = frame2.shape
-                if ret: #nếu như camera được khởi tạo thành công thì sẽ chạy phần xử lý, nếu không thì sẽ thoát chương trình
-                    image1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
-                    image1.flags.writeable = False
-                    results1 = holistic.process(image1)
-                    image1.flags.writeable = True
-                    cv2.imwrite('shared_frame.jpg', image1)
-                    image2 = frame2
-                    image2.flags.writeable = False
-                    results2 = holistic.process(image2)
-                    image2.flags.writeable = True  
-                    # cv2.imshow('r', image2)
-                    mp_drawing.draw_landmarks(image1, results1.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
-                                 mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
-                                 mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2)
-                                )
-                    # mp_drawing.draw_landmarks(image2, results2.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
-                    #              mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
-                    #              mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2)
-                    #             )
-                    try:
-                        rh1 = results1.right_hand_landmarks.landmark
-                        rh_row1 = list(np.array([[landmark.x, landmark.y, landmark.z] for landmark in rh1]).flatten())
-                        row1 = rh_row1
-                        X1 = pd.DataFrame([row1])
-                        body_language_class1 = model.predict(X1)[0]
-                        body_language_prob1 = model.predict_proba(X1)[0]
-                        if results1.right_hand_landmarks:
-                            bbox1 = self.get_hand_bbox(results1.right_hand_landmarks, W, H)
-                            cv2.rectangle(image1, bbox1[0], bbox1[1], (255, 255, 255), 2)
-                            class_name1 = body_language_class1.split(' ')[0]
-                            prob_text1 = f'{class_name1}: {round(body_language_prob1[np.argmax(body_language_prob1)], 2)}'
-                            cv2.putText(image1, prob_text1, (bbox1[0][0], bbox1[0][1] - 10),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)           
-                        if body_language_prob1[np.argmax(body_language_prob1)] >= 0.85 and body_language_class1 != self.checkTrung:
-                            if body_language_class1 == "space": 
-                                self.string += " "
-                                self.luongString1.emit(self.string)
-                                self.checkTrung = body_language_class1
-                                self.checkTrungChanged.emit(self.checkTrung)
-                            else:
-                                self.string += body_language_class1
-                                self.luongString1.emit(self.string)
-                                self.checkTrung = body_language_class1
-                                self.checkTrungChanged.emit(self.checkTrung)
-                        # image1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
-                        # image1_rgb = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
-                        
+        base_x = landmarks[0].x
+        base_y = landmarks[0].y
+        base_z = landmarks[0].z
+        
+        center_x = np.mean([lm.x for lm in landmarks])
+        center_y = np.mean([lm.y for lm in landmarks])
+        center_z = np.mean([lm.z for lm in landmarks])
 
-                        # rh2 = results2.right_hand_landmarks.landmark
-                        # rh_row2 = list(np.array([[landmark.x, landmark.y, landmark.z] for landmark in rh2]).flatten())
-                        # row2 = rh_row2
-                        # X2 = pd.DataFrame([row2])
-                        # body_language_class2 = model.predict(X2)[0]
-                        # body_language_prob2 = model.predict_proba(X2)[0]
-                        # if results2.right_hand_landmarks:
-                        #     bbox2 = self.get_hand_bbox(results2.right_hand_landmarks, W2, H2)
-                        #     cv2.rectangle(image2, bbox2[0], bbox2[1], (255, 255, 255), 2)
-                        #     class_name2 = body_language_class2.split(' ')[0]
-                        #     prob_text2 = f'{class_name2}: {round(body_language_prob2[np.argmax(body_language_prob2)], 2)}'
-                        #     cv2.putText(image2, prob_text2, (bbox2[0][0], bbox2[0][1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
-                        # if body_language_prob2[np.argmax(body_language_prob2)] >= 0.85 and body_language_class2 != self.checkTrung2:
-                        #     if body_language_class2 == "space":
-                        #         self.string2 += " "
-                        #         self.luongString2.emit(self.string2)
-                        #         self.checkTrung2 = body_language_class2
-                        #     else:
-                        #         self.string2 += body_language_class2
-                        #         self.luongString2.emit(self.string2)
-                        #         self.checkTrung2 = body_language_class2
-                    except:
-                        pass
-                    h, w, ch = image1.shape
-                    bytes_per_line = ch * w
-                    convert_to_Qt_format = QImage(image1.data, w, h, bytes_per_line, QImage.Format_RGB888)
-                    p = convert_to_Qt_format.scaled(891, 461, Qt.KeepAspectRatio)
-                    self.luongPixMap1.emit(p)
+        distances = [np.sqrt((lm.x - center_x)**2 + (lm.y - center_y)**2 + (lm.z - center_z)**2) for lm in landmarks[1:]]
 
-                    h2, w2, ch2 = image2.shape
-                    bytes_per_line2 = ch2 * w2
-                    convert_to_Qt_format2 = QImage(image2.data, w2, h2, bytes_per_line2, QImage.Format_RGB888)
-                    p2 = convert_to_Qt_format2.scaled(891, 461, Qt.KeepAspectRatio)
-                    self.luongPixMap2.emit(p2)
-                else:
-                    break
+        scale_factors = [1.0 / dist for dist in distances]
+
+        lm_list.extend([0.0, 0.0, 0.0, landmarks[0].visibility])
+
+        for lm, scale_factor in zip(landmarks[1:], scale_factors):
+            lm_list.append((lm.x - base_x) * scale_factor)
+            lm_list.append((lm.y - base_y) * scale_factor)
+            lm_list.append((lm.z - base_z) * scale_factor)
+            lm_list.append(lm.visibility)
+        
+        return lm_list
+
+    @staticmethod
+    def detect(model, lm_list):
+        lm_list = np.array(lm_list)
+        lm_list = np.expand_dims(lm_list, axis=0)
+        results = model.predict(lm_list)
+        predicted_label_index = np.argmax(results, axis=1)[0]
+        classes = ['a', 'b', 'c']
+        confidence = np.max(results, axis=1)[0]
+        if confidence > 0.95:
+            label = classes[predicted_label_index]
+        else:
+            label = "neutral"
+        return label
+
+    def run(self):
+        model = load_model(f'model_7.h5')
+
+        cap = cv2.VideoCapture(0)
+        cap.set(3, 1280)
+        cap.set(4, 720)
+        lm_list = []
+        
+        while self.trangThai:
+            ret, frame1 = cap.read()
+            message_cam = server.receive()  
+            frame2 = cv2.imdecode(message_cam.image, 1)
+            
+            if ret:
+                image1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
+                results = hands.process(image1)
+
+                image2 = frame2
+
+                if results.multi_hand_landmarks:
+                    for hand_landmarks in results.multi_hand_landmarks:
+                        lm = self.make_landmark_timestep(hand_landmarks)
+                        lm_list.append(lm)
+                        if len(lm_list) == 7:  # Giả định rằng num_of_timesteps là 7
+                            label = self.detect(model, lm_list)
+                            lm_list = []
+
+                            if label != "neutral" and label != self.checkTrung:
+                                if label == "space":
+                                    self.string += " "
+                                else:
+                                    self.string += label
+                                self.luongString1.emit(self.string)
+                                self.checkTrung = label
+                                self.checkTrungChanged.emit(self.checkTrung)
+
+                image1.flags.writeable = True
+                for hand_landmarks in results.multi_hand_landmarks:
+                    mpDraw.draw_landmarks(
+                        image1, hand_landmarks, mphands.HAND_CONNECTIONS,
+                        mpDraw.DrawingSpec(color=(80, 22, 10), thickness=2, circle_radius=4),
+                        mpDraw.DrawingSpec(color=(80, 44, 121), thickness=2, circle_radius=2)
+                    )
+                
+                h, w, ch = image1.shape
+                bytes_per_line = ch * w
+                convert_to_Qt_format = QImage(image1.data, w, h, bytes_per_line, QImage.Format_RGB888)
+                p = convert_to_Qt_format.scaled(891, 461, Qt.KeepAspectRatio)
+                self.luongPixMap1.emit(p)
+
+                h2, w2, ch2 = image2.shape
+                bytes_per_line2 = ch2 * w2
+                convert_to_Qt_format2 = QImage(image2.data, w2, h2, bytes_per_line2, QImage.Format_RGB888)
+                p2 = convert_to_Qt_format2.scaled(891, 461, Qt.KeepAspectRatio)
+                self.luongPixMap2.emit(p2)
+            else:
+                break
         cap.release()
-    def stop(self): 
+
+    def stop(self):
         self.trangThai = False
+
     def get_hand_bbox(self, landmarks, image_width, image_height):
         x_min, x_max, y_min, y_max = float('inf'), 0, float('inf'), 0
 

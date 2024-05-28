@@ -9,7 +9,7 @@ num_coords = 21
 landmarks = ['class']
 for val in range(1, num_coords+1):
     landmarks += ['x{}'.format(val), 'y{}'.format(val), 'z{}'.format(val)]
-with open('coords.csv', mode='w', newline='') as f:
+with open('data.csv', mode='w', newline='') as f:
     csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     csv_writer.writerow(landmarks)
 
@@ -37,9 +37,9 @@ label = ['a', 'b', 'c', 'o', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
          'i_love_you', 'eat', 'thank_you', 'little', 'sorry', 'drink',
          '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
-class_name = "m"
+class_name = "a"
 cnt = 1
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 cap.set(640,640)
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
