@@ -52,7 +52,7 @@
      <enum>QTabWidget::North</enum>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <property name="usesScrollButtons">
      <bool>true</bool>
@@ -417,14 +417,14 @@
         <string>Stop Record</string>
        </property>
       </widget>
-      <widget class="QPushButton" name="stop_video">
+      <widget class="QPushButton" name="send_video">
        <property name="text">
-        <string>Stop Video</string>
+        <string>Send Video</string>
        </property>
       </widget>
       <widget class="QPushButton" name="play_video">
        <property name="text">
-        <string>Play/Replay Video</string>
+        <string>Play Video</string>
        </property>
       </widget>
      </widget>

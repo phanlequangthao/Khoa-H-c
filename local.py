@@ -17,6 +17,8 @@ import socket
 import threading
 import subprocess
 import tensorflow as tf
+import base64
+import time
 from keras.models import load_model
 mphands = mp.solutions.hands
 hands = mphands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5)
@@ -28,27 +30,28 @@ class SpeechToVideoThread(QThread):
     def __init__(self, img_dir, video_output_path):
         super(SpeechToVideoThread, self).__init__()
         self.img_dir = img_dir
-        self.img_dir2 = r"D:\img2"
         self.video_output_path = video_output_path
-        self.video_output_path2 = r"output_video2.mp4"
         self.audio_text = ""
         self.is_recording = False
     def run(self):
-        recognizer = sr.Recognizer()
-        recognizer.energy_threshold = 300
+        r = sr.Recognizer()
+        m = sr.Microphone()
+        print("A moment of silence, please...")
+        with m as source: r.adjust_for_ambient_noise(source)
+        print("Set minimum energy threshold to {}".format(r.energy_threshold))
         while self.is_recording:
-            with sr.Microphone() as source:
-                print("Recording...") #Bắt đầu nhận diện giọng nói
-                audio = recognizer.listen(source)
+            print("Say something!")
+            with m as source: audio = r.listen(source)
+            print("Got it! Now to recognize it...")
             try:
-                self.audio_text = recognizer.recognize_google(audio) #đây là kết quả mà mô hình trả về
-                print("Ket qua: ", self.audio_text) 
+                self.audio_text = r.recognize_google(audio)
+                print("You said {}".format(self.audio_text))
                 self.create_video_from_text()
                 self.audioTextChanged.emit(self.audio_text)
             except sr.UnknownValueError:
-                print("Er!")  #Bỏ qua nếu không thể nhận diện
+                print("Oops! Didn't catch that")
             except sr.RequestError as e:
-                print(f"Lỗi: {e}")
+                print("Uh oh! Couldn't request results from Google Speech Recognition service; {0}".format(e))
     def start_recording(self):
         self.is_recording = True #Em đánh dấu cho biến is_recording là đang hoạt động
         self.start() 
@@ -59,8 +62,9 @@ class SpeechToVideoThread(QThread):
         
     # hàm thêm đường dẫn ảnh từ văn bản nhận diện được
     def create_video_from_text(self):
+        print("in create_video_from_text")
+        print(self.audio_text)
         img_list = []
-        img_list2 = []
         for char in self.audio_text.lower():
             if char != ' ':
                 img_path = os.path.join(self.img_dir, f"{char}.jpg").replace('\\', '/')
@@ -72,21 +76,9 @@ class SpeechToVideoThread(QThread):
                     img_list.append(img_path)
             else:
                 continue
-        for char in self.audio_text.lower():
-            if char != ' ':
-                img_path = os.path.join(self.img_dir2, f"{char}.jpg").replace('\\', '/')
-                if os.path.exists(img_path):
-                    img_list2.append(img_path)
-            elif char == ' ':
-                img_path = os.path.join(self.img_dir2, 'space.jpg').replace('\\', '/')
-                if os.path.exists(img_path):
-                    img_list2.append(img_path)
-            else:
-                continue
         print("Image List:", img_list)
         if img_list:
             self.show_video(img_list)
-            self.show_video2(img_list2)
             self.audioTextChanged.emit("Video created!")
             print("Done")
     #tạo video bằng ảnh ngôn ngữ ký hiệu
@@ -102,38 +94,43 @@ class SpeechToVideoThread(QThread):
             fps = 0.25
             clip = ImageSequenceClip(frame_list, fps=fps)
             clip.write_videofile(self.video_output_path, codec='libx264', fps=fps)
-    #tạo video bằng ảnh chữ cái thường
-    def show_video2(self, img_list2):
-        frame_list = []
-        for img_path in img_list2:
-            frame = cv2.imread(img_path)
-            if frame is not None:
-                rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame_list.append(rgb_image)
-
-        if frame_list:
-            fps = 0.25
-            clip = ImageSequenceClip(frame_list, fps=fps)
-            clip.write_videofile(self.video_output_path2, codec='libx264', fps=fps)
 class Video(QThread):
     vid = pyqtSignal(QImage)
     def run(self):
+        video_data = b''
         self.hilo_corriendo = True
-        video_path = r"D:\a\output_video.mp4"
+        video_path = r"output_video.mp4"
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)  # Get the frame rate
         delay = int(1000 / fps)  # Calculate delay between frames
         while self.hilo_corriendo:
             ret, frame = cap.read()
             if ret:
+                _, buffer = cv2.imencode('.jpg', frame)
+                frame_bytes = base64.b64encode(buffer)
+                
+                # Thêm kích thước của frame vào đầu chuỗi
+                frame_size = len(frame_bytes).to_bytes(4, byteorder='big')
+                video_data += frame_size + frame_bytes
+        cap.release()
+        client.send(video_data.encode('utf-8'))
+        while self.hilo_corriendo:
+            ret, frame = cap.read()
+            if ret:
+                _, buffer = cv2.imencode('.jpg', frame)
+                frame_bytes = base64.b64encode(buffer)
+                
+                # Thêm kích thước của frame vào đầu chuỗi
+                frame_size = len(frame_bytes).to_bytes(4, byteorder='big')
+                video_data += frame_size + frame_bytes
+                
                 rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 h, w, ch = rgb_image.shape
                 bytes_per_line = ch * w
                 convert_to_Qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
                 p = convert_to_Qt_format.scaled(890, 440, Qt.KeepAspectRatio)
                 self.vid.emit(p)
-                
-                self.msleep(delay)  # Introduce delay to match the frame rate
+                self.msleep(delay)  
         cap.release()
     def stop(self):
         self.hilo_corriendo = False
@@ -142,25 +139,41 @@ class Video2(QThread):
     vid2 = pyqtSignal(QImage)
 
     def run(self):
-        self.check = True
-        video_path = r"D:\a\output_video2.mp4"
-        cap = cv2.VideoCapture(video_path)
-        
-        fps = cap.get(cv2.CAP_PROP_FPS) 
-        delay = int(1000 / fps)
-        
-        while self.check:
-            ret, frame = cap.read()
-            if ret:
-                rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                h, w, ch = rgb_image.shape
-                bytes_per_line = ch * w
-                convert_to_Qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-                p = convert_to_Qt_format.scaled(890, 440, Qt.KeepAspectRatio)
-                self.vid2.emit(p)
-                
-                self.msleep(delay)  # Introduce delay to match the frame rate
-        cap.release()
+        buffer_size = 4096
+        data = b''
+
+        while True:
+            while len(data) < 4:
+                packet = client.recv(buffer_size)
+                if not packet:
+                    return
+                data += packet
+
+            frame_size = int.from_bytes(data[:4], byteorder='big')
+            data = data[4:]
+
+            while len(data) < frame_size:
+                packet = client.recv(buffer_size)
+                if not packet:
+                    return
+                data += packet
+
+            frame_bytes = data[:frame_size]
+            data = data[frame_size:]
+
+            frame = base64.b64decode(frame_bytes)
+            np_frame = np.frombuffer(frame, dtype=np.uint8)
+            img = cv2.imdecode(np_frame, cv2.IMREAD_COLOR)
+            rgb_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgb_image.shape
+            bytes_per_line = ch * w
+            convert_to_Qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+            p = convert_to_Qt_format.scaled(890, 440, Qt.KeepAspectRatio)
+            self.vid2.emit(p)
+            
+            fps = 30
+            frame_duration = 1.0 / fps
+            time.sleep(frame_duration)
 
     def stop(self):
         self.check = False
@@ -186,8 +199,6 @@ class Ham_Camera(QThread):
         self.luongClearSignal.connect(self.clear_string)
         self.num_of_timesteps = 7
         self.lm_list = []
-
-        
         self.model = load_model(f'model_7.h5')
 
     def update_string1(self, new_string):
@@ -352,7 +363,7 @@ class Ham_Chinh(QMainWindow):
         self.thread_camera.luongClearSignal.connect(self.process_string)
         self.thread_camera.checkTrungChanged.connect(self.handle_check_trung_changed)
         # Khởi tạo luồng video
-        self.img_dir = r'D:\a\img'
+        self.img_dir = r'C:\Users\chojl\Desktop\app\img1'
         self.video_output_path = r'output_video.mp4'
         self.thread_vid = SpeechToVideoThread(self.img_dir, self.video_output_path)
         # Kết nối tín hiệu luongPixMap của luồng camera với hàm setCamera

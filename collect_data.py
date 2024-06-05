@@ -37,9 +37,9 @@ label = ['a', 'b', 'c', 'o', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
          'i_love_you', 'eat', 'thank_you', 'little', 'sorry', 'drink',
          '1', '2', '3', '4', '5', '6', '7', '8', '9', '10']
 
-class_name = "a"
+class_name = "b"
 cnt = 1
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 cap.set(640,640)
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))

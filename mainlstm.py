@@ -18,6 +18,8 @@ import threading
 import subprocess
 import tensorflow as tf
 from keras.models import load_model
+import base64
+import time
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
@@ -38,27 +40,28 @@ class SpeechToVideoThread(QThread):
     def __init__(self, img_dir, video_output_path):
         super(SpeechToVideoThread, self).__init__()
         self.img_dir = img_dir
-        self.img_dir2 = r"D:\img2"
         self.video_output_path = video_output_path
-        self.video_output_path2 = r"output_video2.mp4"
         self.audio_text = ""
         self.is_recording = False
     def run(self):
-        recognizer = sr.Recognizer()
-        recognizer.energy_threshold = 300
+        r = sr.Recognizer()
+        m = sr.Microphone()
+        print("A moment of silence, please...")
+        with m as source: r.adjust_for_ambient_noise(source)
+        print("Set minimum energy threshold to {}".format(r.energy_threshold))
         while self.is_recording:
-            with sr.Microphone() as source:
-                print("Recording...") #Bắt đầu nhận diện giọng nói
-                audio = recognizer.listen(source)
+            print("Say something!")
+            with m as source: audio = r.listen(source)
+            print("Got it! Now to recognize it...")
             try:
-                self.audio_text = recognizer.recognize_google(audio) #đây là kết quả mà mô hình trả về
-                print("Ket qua: ", self.audio_text) 
+                self.audio_text = r.recognize_google(audio)
+                print("You said {}".format(self.audio_text))
                 self.create_video_from_text()
                 self.audioTextChanged.emit(self.audio_text)
             except sr.UnknownValueError:
-                print("Er!")  #Bỏ qua nếu không thể nhận diện
+                print("Oops! Didn't catch that")
             except sr.RequestError as e:
-                print(f"Lỗi: {e}")
+                print("Uh oh! Couldn't request results from Google Speech Recognition service; {0}".format(e))
     def start_recording(self):
         self.is_recording = True #Em đánh dấu cho biến is_recording là đang hoạt động
         self.start() 
@@ -69,8 +72,9 @@ class SpeechToVideoThread(QThread):
         
     # hàm thêm đường dẫn ảnh từ văn bản nhận diện được
     def create_video_from_text(self):
+        print("in create_video_from_text")
+        print(self.audio_text)
         img_list = []
-        img_list2 = []
         for char in self.audio_text.lower():
             if char != ' ':
                 img_path = os.path.join(self.img_dir, f"{char}.jpg").replace('\\', '/')
@@ -82,21 +86,9 @@ class SpeechToVideoThread(QThread):
                     img_list.append(img_path)
             else:
                 continue
-        for char in self.audio_text.lower():
-            if char != ' ':
-                img_path = os.path.join(self.img_dir2, f"{char}.jpg").replace('\\', '/')
-                if os.path.exists(img_path):
-                    img_list2.append(img_path)
-            elif char == ' ':
-                img_path = os.path.join(self.img_dir2, 'space.jpg').replace('\\', '/')
-                if os.path.exists(img_path):
-                    img_list2.append(img_path)
-            else:
-                continue
         print("Image List:", img_list)
         if img_list:
             self.show_video(img_list)
-            self.show_video2(img_list2)
             self.audioTextChanged.emit("Video created!")
             print("Done")
     #tạo video bằng ảnh ngôn ngữ ký hiệu
@@ -112,24 +104,11 @@ class SpeechToVideoThread(QThread):
             fps = 0.25
             clip = ImageSequenceClip(frame_list, fps=fps)
             clip.write_videofile(self.video_output_path, codec='libx264', fps=fps)
-    #tạo video bằng ảnh chữ cái thường
-    def show_video2(self, img_list2):
-        frame_list = []
-        for img_path in img_list2:
-            frame = cv2.imread(img_path)
-            if frame is not None:
-                rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                frame_list.append(rgb_image)
-
-        if frame_list:
-            fps = 0.25
-            clip = ImageSequenceClip(frame_list, fps=fps)
-            clip.write_videofile(self.video_output_path2, codec='libx264', fps=fps)
 class Video(QThread):
     vid = pyqtSignal(QImage)
     def run(self):
         self.hilo_corriendo = True
-        video_path = r"D:\a\output_video.mp4"
+        video_path = r"C:\Users\chojl\Pictures\Camera Roll\a2.mp4"
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)  # Get the frame rate
         delay = int(1000 / fps)  # Calculate delay between frames
@@ -148,12 +127,14 @@ class Video(QThread):
     def stop(self):
         self.hilo_corriendo = False
         self.quit()
+
+
 class Video2(QThread):
     vid2 = pyqtSignal(QImage)
 
     def run(self):
         self.check = True
-        video_path = r"D:\a\output_video2.mp4"
+        video_path = r"C:\Users\chojl\Pictures\Camera Roll\a2.mp4"
         cap = cv2.VideoCapture(video_path)
         
         fps = cap.get(cv2.CAP_PROP_FPS) 
@@ -175,6 +156,9 @@ class Video2(QThread):
     def stop(self):
         self.check = False
         self.quit()
+
+
+
 class Ham_Camera(QThread):
     luongPixMap1 = pyqtSignal(QImage)
     luongPixMap2 = pyqtSignal(QImage)
@@ -189,11 +173,13 @@ class Ham_Camera(QThread):
         self.trangThai = True
         self.string = ""
         self.string2 = ""
-        self.frame_count_threshold = 20  # Số frame tối thiểu để hiển thị classname
+        self.frame_count_threshold = 20
         self.current_frame_count = 0
         self.luongString1.connect(self.update_string1)
         self.luongString2.connect(self.update_string2)
         self.luongClearSignal.connect(self.clear_string)
+
+        self.latest_frame_from_server = None
 
     def update_string1(self, new_string):
         self.string = new_string
@@ -208,16 +194,16 @@ class Ham_Camera(QThread):
     def make_landmark_timestep(hand_landmarks):
         lm_list = []
         landmarks = hand_landmarks.landmark
-        
+
         base_x = landmarks[0].x
         base_y = landmarks[0].y
         base_z = landmarks[0].z
-        
+
         center_x = np.mean([lm.x for lm in landmarks])
         center_y = np.mean([lm.y for lm in landmarks])
         center_z = np.mean([lm.z for lm in landmarks])
 
-        distances = [np.sqrt((lm.x - center_x)**2 + (lm.y - center_y)**2 + (lm.z - center_z)**2) for lm in landmarks[1:]]
+        distances = [np.sqrt((lm.x - center_x) ** 2 + (lm.y - center_y) ** 2 + (lm.z - center_z) ** 2) for lm in landmarks[1:]]
 
         scale_factors = [1.0 / dist for dist in distances]
 
@@ -228,7 +214,7 @@ class Ham_Camera(QThread):
             lm_list.append((lm.y - base_y) * scale_factor)
             lm_list.append((lm.z - base_z) * scale_factor)
             lm_list.append(lm.visibility)
-        
+
         return lm_list
 
     @staticmethod
@@ -237,7 +223,10 @@ class Ham_Camera(QThread):
         lm_list = np.expand_dims(lm_list, axis=0)
         results = model.predict(lm_list)
         predicted_label_index = np.argmax(results, axis=1)[0]
-        classes = ['a', 'b', 'c']
+        classes = ['a', 'b', 'c', 'o', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
+         'l', 'm', 'n', 'p', 'q', 'r', 's', 'space', 't', 'u',
+         'v', 'w', 'x', 'y', 'z', 'yes', 'no', 'me', 'you', 'hello',
+         'i_love_you', 'thank_you', 'sorry']
         confidence = np.max(results, axis=1)[0]
         if confidence > 0.95:
             label = classes[predicted_label_index]
@@ -246,29 +235,29 @@ class Ham_Camera(QThread):
         return label
 
     def run(self):
-        model = load_model(f'model_7.h5')
+        model = load_model('model_7.h5')
 
         cap = cv2.VideoCapture(0)
-        cap.set(3, 1280)
-        cap.set(4, 720)
+        cap.set(3, 640)
+        cap.set(4, 480)
         lm_list = []
-        
+
+        threading.Thread(target=self.receive_frame, daemon=True).start()
+
         while self.trangThai:
             ret, frame1 = cap.read()
-            message_cam = server.receive()  
-            frame2 = cv2.imdecode(message_cam.image, 1)
-            
+            frame2 = self.latest_frame_from_server
+
             if ret:
                 image1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
+                cv2.imwrite('shared_frame.jpg', image1)
                 results = hands.process(image1)
-
                 image2 = frame2
-
                 if results.multi_hand_landmarks:
                     for hand_landmarks in results.multi_hand_landmarks:
                         lm = self.make_landmark_timestep(hand_landmarks)
                         lm_list.append(lm)
-                        if len(lm_list) == 7:  # Giả định rằng num_of_timesteps là 7
+                        if len(lm_list) == 7:
                             label = self.detect(model, lm_list)
                             lm_list = []
 
@@ -282,27 +271,38 @@ class Ham_Camera(QThread):
                                 self.checkTrungChanged.emit(self.checkTrung)
 
                 image1.flags.writeable = True
-                for hand_landmarks in results.multi_hand_landmarks:
-                    mpDraw.draw_landmarks(
-                        image1, hand_landmarks, mphands.HAND_CONNECTIONS,
-                        mpDraw.DrawingSpec(color=(80, 22, 10), thickness=2, circle_radius=4),
-                        mpDraw.DrawingSpec(color=(80, 44, 121), thickness=2, circle_radius=2)
-                    )
-                
+                try:
+                    for hand_landmarks in results.multi_hand_landmarks:
+                        mpDraw.draw_landmarks(
+                            image1, hand_landmarks, mphands.HAND_CONNECTIONS,
+                            mpDraw.DrawingSpec(color=(80, 22, 10), thickness=2, circle_radius=4),
+                            mpDraw.DrawingSpec(color=(80, 44, 121), thickness=2, circle_radius=2)
+                        )
+                except:
+                    print("ko co landmark")
+
                 h, w, ch = image1.shape
                 bytes_per_line = ch * w
                 convert_to_Qt_format = QImage(image1.data, w, h, bytes_per_line, QImage.Format_RGB888)
-                p = convert_to_Qt_format.scaled(891, 461, Qt.KeepAspectRatio)
+                p = convert_to_Qt_format.scaled(640, 480, Qt.KeepAspectRatio)
                 self.luongPixMap1.emit(p)
 
-                h2, w2, ch2 = image2.shape
-                bytes_per_line2 = ch2 * w2
-                convert_to_Qt_format2 = QImage(image2.data, w2, h2, bytes_per_line2, QImage.Format_RGB888)
-                p2 = convert_to_Qt_format2.scaled(891, 461, Qt.KeepAspectRatio)
-                self.luongPixMap2.emit(p2)
+                if frame2 is not None:
+                    h2, w2, ch2 = image2.shape
+                    bytes_per_line2 = ch2 * w2
+                    convert_to_Qt_format2 = QImage(image2.data, w2, h2, bytes_per_line2, QImage.Format_RGB888)
+                    p2 = convert_to_Qt_format2.scaled(640, 480, Qt.KeepAspectRatio)
+                    self.luongPixMap2.emit(p2)
             else:
                 break
         cap.release()
+
+    def receive_frame(self):
+        while self.trangThai:
+            message_cam = server.receive()
+            # frame2 = cv2.imdecode(message_cam.image, 1)
+            frame2 = cv2.imdecode(np.frombuffer(message_cam.image, np.uint8), 1)
+            self.latest_frame_from_server = frame2
 
     def stop(self):
         self.trangThai = False
@@ -319,6 +319,7 @@ class Ham_Camera(QThread):
 
         bbox = ((x_min, y_min), (x_max, y_max))
         return bbox
+
 
 """
 Ham_Camera được sử dụng để khởi tạo webcam và chạy mô hình dự đoán của dự án, hình ảnh được ghi nhận từ webcam sẽ được
@@ -359,7 +360,7 @@ class Ham_Chinh(QMainWindow):
         self.send.clicked.connect(self.sendMess)
         self.messageSent.connect(self.send_message)
         #Kết nối tín hiệu speak với hàm nói ra văn bản
-        # message = client.recv(1024).decode('utf-8')
+        # message = client.recv(1024).decode()
         # self.text2.setText(message)
         # Kết nối tín hiệu luongString1 của luồng camera với hàm setText của label text
         self.thread_camera.luongString1.connect(self.text1.setText)
@@ -369,47 +370,93 @@ class Ham_Chinh(QMainWindow):
         self.stop_record_button.clicked.connect(self.stop_recording)
         self.stop_record_button.setEnabled(False)
         self.play_video.clicked.connect(self.start_video)
-        self.stop_video.clicked.connect(self.stop_vide)
+        self.send_video.clicked.connect(self.sendVideo)
+        # self.stop_video.clicked.connect(self.stop_vide)
         self.thread_vid.audioTextChanged.connect(self.text_2.setText)
+
+
         self.listen_thread = threading.Thread(target=self.listen_for_messages)
         self.listen_thread.start()
+        
+        
+    def sendVideo(self):
+        client.send("START_VIDEO".encode())
+        file_name = r'C:\Users\chojl\Pictures\Camera Roll\a2.mp4'
+        file_size = os.path.getsize(file_name)
+        time.sleep(5)
+        client.send(file_name.encode())
+        client.send(str(file_size).encode())
+
+        # Opening file and sending data.
+        with open(file_name, "rb") as file:
+            c = 0
+
+            while c <= file_size:
+                data = file.read(1024)
+                if not (data):
+                    break
+                client.sendall(data)
+                c += len(data)
+
+
     def start_video(self):
         self.Work.start()
-        self.Work2.start()
+        # self.Work2.start()
         self.Work.vid.connect(self.Imageupd_slot)
-        self.Work2.vid2.connect(self.vidletter)
+        # self.Work2.vid2.connect(self.vidletter)
     def listen_for_messages(self):
         while True:
             try:
-                message = client.recv(1024).decode('utf-8')
+                message = client.recv(1024).decode()
                 print(f"Received message: {message}")
                 if "OTHER_USER_IP:" in message:
                     other_user_ip = message.split(":")[1]
-                    # subprocess.Popen(["python", "mainlstm.py"])
-                    # time.sleep(7)
                     subprocess.Popen(["python", "client_camera.py"])
                     print("done")
+                elif message == "START_VIDEO":
+                    print("Video data incoming...")
+                    self.receive_video_data()
                 else:
                     self.text2.setText(message)
+            except UnicodeDecodeError as e:
+                print("Unicode decode error occurred: ", e)
             except Exception as e:
                 print("An error occurred!", e)
                 client.close()
                 break
+
+
+    def receive_video_data(self):
+        file_name = client.recv(100).decode()
+        file_size = client.recv(100).decode()
+
+        with open(file_name, "wb") as file:
+            c = 0
+
+            while c <= int(file_size):
+                data = client.recv(1024)
+                if not (data):
+                    break
+                file.write(data)
+                c += len(data)
+        self.Work2.start()
+        self.Work2.vid2.connect(self.vidletter)
+
 
     def sendMess(self):
         mess = self.text1.text()
         self.messageSent.emit(mess)
 
     def send_message(self, message):
-        client.send(message.encode('utf-8'))
+        client.send(message.encode())
         print("Sent message successfully")
     def Imageupd_slot(self, Image):
         self.img_label.setPixmap(QPixmap.fromImage(Image))
     def vidletter(self, Image):
         self.img_label_2.setPixmap(QPixmap.fromImage(Image))
-    def stop_vide(self):
-        self.Work.stop()
-        self.Work2.stop()
+    # def stop_vide(self):
+    #     self.Work.stop()
+    #     self.Work2.stop()
     def setCamera1(self, image1):
         # Cập nhật hình ảnh lên label cam
         self.camera1.setPixmap(QPixmap.fromImage(image1))
@@ -468,8 +515,8 @@ class Ham_Chinh(QMainWindow):
 
 if __name__ == '__main__':
     room_code = input("Enter room code or type 'NEW' for a new room: ")
-    client.send(room_code.encode('utf-8'))
-    server_message = client.recv(1024).decode('utf-8')
+    client.send(room_code.encode())
+    server_message = client.recv(1024).decode()
     print(server_message)
     if "Connected to room" in server_message:
         app = QApplication(sys.argv)
