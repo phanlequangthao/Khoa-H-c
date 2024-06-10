@@ -134,7 +134,7 @@ class Video2(QThread):
 
     def run(self):
         self.check = True
-        video_path = r"C:\Users\chojl\Pictures\Camera Roll\a2.mp4"
+        video_path = r"a2.mp4"
         cap = cv2.VideoCapture(video_path)
         
         fps = cap.get(cv2.CAP_PROP_FPS) 
@@ -381,23 +381,26 @@ class Ham_Chinh(QMainWindow):
         
     def sendVideo(self):
         client.send("START_VIDEO".encode())
-        file_name = r'C:\Users\chojl\Pictures\Camera Roll\a2.mp4'
+        file_name = r'i.mp4'
         file_size = os.path.getsize(file_name)
         time.sleep(5)
-        client.send(file_name.encode())
-        client.send(str(file_size).encode())
+        client.send(f"{file_name}|{file_size}".encode())
 
         # Opening file and sending data.
         with open(file_name, "rb") as file:
             c = 0
-
+            i = 0
             while c <= file_size:
                 data = file.read(1024)
                 if not (data):
                     break
+                # print(i)
+                i += 1
                 client.sendall(data)
                 c += len(data)
-
+                print(c)
+            print("done")
+        
 
     def start_video(self):
         self.Work.start()
@@ -427,9 +430,15 @@ class Ham_Chinh(QMainWindow):
 
 
     def receive_video_data(self):
-        file_name = client.recv(100).decode()
-        file_size = client.recv(100).decode()
-
+        try:
+            # Nhận tên file và kích thước file
+            file_info = client.recv(1024).decode()
+            file_name, file_size = file_info.split("|")
+            file_size = int(file_size)
+        except Exception as e:
+            print("Error receiving file info:", e)
+            return
+        
         with open(file_name, "wb") as file:
             c = 0
 
@@ -439,6 +448,7 @@ class Ham_Chinh(QMainWindow):
                     break
                 file.write(data)
                 c += len(data)
+        
         self.Work2.start()
         self.Work2.vid2.connect(self.vidletter)
 
