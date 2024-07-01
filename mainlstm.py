@@ -235,9 +235,9 @@ class Ham_Camera(QThread):
         return label
 
     def run(self):
-        model = load_model('model_7.h5')
+        model = load_model('/model/model_9.keras')
 
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(camera_index)
         cap.set(3, 640)
         cap.set(4, 480)
         lm_list = []
@@ -411,10 +411,12 @@ class Ham_Chinh(QMainWindow):
         while True:
             try:
                 message = client.recv(1024).decode()
-                print(f"Received message: {message}")
+                print(f"Recv: {message}")
                 if "OTHER_USER_IP:" in message:
                     other_user_ip = message.split(":")[1]
-                    subprocess.Popen(["python", "client_camera.py"])
+                    subprocess.Popen([sys.executable, "client_camera.py", "--server_ip", other_user_ip])
+                    subprocess.Popen([sys.executable, "test_client.py", "--host_ip", other_user_ip])
+                    subprocess.Popen([sys.executable, "test_server.py"])
                     print("done")
                 elif message == "START_VIDEO":
                     print("Video data incoming...")
@@ -528,6 +530,7 @@ if __name__ == '__main__':
     client.send(room_code.encode())
     server_message = client.recv(1024).decode()
     print(server_message)
+    camera_index = int(input("Nhập số camera bạn muốn chọn, 0 là webcam mặc định: "))
     if "Connected to room" in server_message:
         app = QApplication(sys.argv)
         window = Ham_Chinh()

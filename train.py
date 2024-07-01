@@ -1,5 +1,6 @@
 import os
 import numpy as np
+
 import pandas as pd
 import tensorflow as tf
 from keras.layers import LSTM, Dense, Dropout
@@ -8,6 +9,8 @@ from keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 from keras.callbacks import EarlyStopping
+from keras.regularizers import l2
+
 
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
@@ -16,8 +19,7 @@ classes = ['a', 'b', 'c', 'o', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
            'l', 'm', 'n', 'p', 'q', 'r', 's', 'space', 't', 'u',
            'v', 'w', 'x', 'y', 'z', 'yes', 'no', 'me', 'you', 'hello',
            'i_love_you', 'thank_you', 'sorry']
-
-num_of_timesteps = 7
+num_of_timesteps = 9
 num_classes = len(classes)
 
 X, y = [], []
@@ -36,8 +38,6 @@ for cl in classes:
     label = label + 1
 
 
-
-
 X, y = np.array(X), np.array(y)
 print(X.shape, y.shape)
 
@@ -46,7 +46,7 @@ y_train = to_categorical(y_train, num_classes)
 y_test = to_categorical(y_test, num_classes)
 
 model = Sequential()
-model.add(LSTM(units=128, return_sequences=True, input_shape=(X.shape[1], X.shape[2])))
+model.add(LSTM(units=128, return_sequences=True, input_shape=(X.shape[1], X.shape[2]), kernel_regularizer=l2(0.01)))
 model.add(Dropout(0.3))
 model.add(LSTM(units=128, return_sequences=True))
 model.add(Dropout(0.2))
@@ -60,14 +60,11 @@ model.add(Dense(units=num_classes, activation="softmax"))
 model.compile(optimizer="adam", metrics=['accuracy'], loss="categorical_crossentropy")
 model.summary()
 
-# Vẽ kiến trúc mô hình
 # plot_model(model, to_file='model_architecture.png', show_shapes=True, show_layer_names=True)
 
-# Huấn luyện mô hình
 early_stopping = EarlyStopping(monitor='val_loss', patience=2, restore_best_weights=True)  
-history = model.fit(X_train, y_train, epochs=10, batch_size=32, validation_data=(X_test, y_test), callbacks=[early_stopping])
+history = model.fit(X_train, y_train, epochs=20, batch_size=528, validation_data=(X_test, y_test), callbacks=[early_stopping])
 
-# Lưu mô hình
 model.save(f"model/model_{num_of_timesteps}.keras")
 
 def visualize_loss(history, title):
