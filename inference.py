@@ -107,8 +107,7 @@ def detect(model, lm_list):
 
 
 cap = cv2.VideoCapture(0)
-cap.set(3, 1280)
-cap.set(4, 720)
+cap.set(640,640)
 
 lm_list = []
 

@@ -235,7 +235,7 @@ class Ham_Camera(QThread):
         return label
 
     def run(self):
-        model = load_model('/model/model_9.keras')
+        model = load_model('./model/model_9.keras')
 
         cap = cv2.VideoCapture(camera_index)
         cap.set(3, 640)
@@ -247,7 +247,7 @@ class Ham_Camera(QThread):
         while self.trangThai:
             ret, frame1 = cap.read()
             frame2 = self.latest_frame_from_server
-
+            #hello
             if ret:
                 image1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB)
                 cv2.imwrite('shared_frame.jpg', image1)
@@ -257,7 +257,7 @@ class Ham_Camera(QThread):
                     for hand_landmarks in results.multi_hand_landmarks:
                         lm = self.make_landmark_timestep(hand_landmarks)
                         lm_list.append(lm)
-                        if len(lm_list) == 7:
+                        if len(lm_list) == 9:
                             label = self.detect(model, lm_list)
                             lm_list = []
 
