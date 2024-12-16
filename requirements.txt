@@ -5,3 +5,4 @@ tensorflow==2.13.1
 keras==2.13.1
 opencv-python==4.8.1.78
 mediapipe==0.10.10
+markupsafe==2.0.1
